@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('checksum', 64)->nullable();
 
             $table->integer('version')->default(1);
-            $table->foreignUuid('replaces_file_id')->nullable()->constrained('files')->nullOnDelete();
+            $table->uuid('replaces_file_id')->nullable();
             $table->string('visibility')->default('project'); // organization, project, private
 
             $table->foreignUuid('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
@@ -35,6 +35,12 @@ return new class extends Migration
 
             $table->index(['organization_id', 'project_id']);
             $table->index(['attachable_type', 'attachable_id']);
+            $table->index('replaces_file_id');
+        });
+
+        // Self-reference added after the table exists, same reason as tasks.
+        Schema::table('files', function (Blueprint $table) {
+            $table->foreign('replaces_file_id')->references('id')->on('files')->nullOnDelete();
         });
 
         Schema::create('notifications', function (Blueprint $table) {
@@ -50,7 +56,7 @@ return new class extends Migration
         });
 
         // Append-only. Nothing in the application updates or deletes these rows,
-        // and the trigger below enforces that at the database level.
+        // and the trigger in migration 000013 enforces that at database level.
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('organization_id')->nullable()->constrained()->nullOnDelete();

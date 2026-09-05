@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('project_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('parent_task_id')->nullable()->constrained('tasks')->nullOnDelete();
+            $table->uuid('parent_task_id')->nullable();
 
             $table->string('title');
             $table->text('description')->nullable();
@@ -40,6 +40,14 @@ return new class extends Migration
             $table->index(['organization_id', 'status']);
             $table->index(['project_id', 'status']);
             $table->index('due_at');
+            $table->index('parent_task_id');
+        });
+
+        // Self-reference added after the table exists. On Postgres, Laravel
+        // appends the primary key as a separate statement, so an inline
+        // self-reference would run before there is a key to point at.
+        Schema::table('tasks', function (Blueprint $table) {
+            $table->foreign('parent_task_id')->references('id')->on('tasks')->nullOnDelete();
         });
 
         Schema::create('task_assignees', function (Blueprint $table) {
@@ -58,12 +66,17 @@ return new class extends Migration
             $table->foreignUuid('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('task_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('parent_id')->nullable()->constrained('task_comments')->cascadeOnDelete();
+            $table->uuid('parent_id')->nullable();
             $table->text('body');
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['task_id', 'created_at']);
+            $table->index('parent_id');
+        });
+
+        Schema::table('task_comments', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('task_comments')->cascadeOnDelete();
         });
 
         Schema::create('task_checklist_items', function (Blueprint $table) {
