@@ -3,6 +3,11 @@
 #
 #   scripts/build-deploy.sh [domain]       default: freelancy.saddamadil.in
 #
+# SQLite (default) ships a migrated database file. For MySQL/MariaDB set
+#   DB_CONNECTION=mysql DB_DATABASE=name DB_USERNAME=user scripts/build-deploy.sh domain
+# and import the schema from scripts/export-schema.sh into that database; the password is
+# left as a placeholder in .env for you to fill in on the server.
+#
 # Output: dist/workora-<domain>.zip containing
 #   workora/        the app, vendor/ and a migrated SQLite database. Upload NEXT TO public_html.
 #   webroot/        the web root contents. Move INTO the subdomain's document root.
@@ -47,16 +52,25 @@ set_env APP_KEY "$KEY"
 set_env APP_DEBUG false
 set_env APP_URL "https://$DOMAIN"
 set_env LOG_LEVEL warning
-set_env DB_CONNECTION sqlite
 set_env SESSION_DRIVER database
+if [ "${DB_CONNECTION:-sqlite}" = "mysql" ]; then
+  set_env DB_CONNECTION mysql
+  sed -i "s|^# DB_HOST=.*|DB_HOST=localhost|; s|^# DB_PORT=.*|DB_PORT=3306|; s|^# DB_DATABASE=.*|DB_DATABASE=${DB_DATABASE:?set DB_DATABASE}|; s|^# DB_USERNAME=.*|DB_USERNAME=${DB_USERNAME:?set DB_USERNAME}|; s|^# DB_PASSWORD=.*|DB_PASSWORD=PUT_YOUR_DATABASE_PASSWORD_HERE|" .env
+else
+  set_env DB_CONNECTION sqlite
+fi
 cat >> .env <<ENV
 SESSION_SECURE_COOKIE=true
 ENV
 
 echo "==> Creating the database"
 mkdir -p storage/framework/{cache,sessions,views} storage/logs storage/app/private bootstrap/cache
-touch database/database.sqlite
-php artisan migrate --force --no-interaction >/dev/null
+if [ "${DB_CONNECTION:-sqlite}" = "mysql" ]; then
+  echo "    (MySQL: import the schema SQL into your database instead)"
+else
+  touch database/database.sqlite
+  php artisan migrate --force --no-interaction >/dev/null
+fi
 php artisan package:discover --ansi >/dev/null
 
 echo "==> Writing webroot/index.php"

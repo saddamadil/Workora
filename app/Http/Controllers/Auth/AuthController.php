@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\FreelancerProfile;
 use App\Models\User;
 use App\Services\Workspaces;
 use Illuminate\Http\RedirectResponse;
@@ -37,7 +38,7 @@ class AuthController extends Controller
             'last_login_ip' => $request->ip(),
         ])->save();
 
-        return redirect()->intended(route('files.index'));
+        return $this->afterAuth($request);
     }
 
     public function showRegister(): View
@@ -48,6 +49,7 @@ class AuthController extends Controller
     public function register(Request $request, Workspaces $workspaces): RedirectResponse
     {
         $data = $request->validate([
+            'account_type' => ['required', 'in:company,freelancer'],
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
@@ -61,7 +63,12 @@ class AuthController extends Controller
                 'password' => $data['password'],
             ]);
 
-            $workspaces->createFor($user, ($data['workspace'] ?? null) ?: $data['name']."'s workspace");
+            if ($data['account_type'] === 'company') {
+                $workspaces->createFor($user, ($data['workspace'] ?? null) ?: $data['name']."'s company");
+            } else {
+                // A freelancer has one profile that follows them across every company.
+                FreelancerProfile::create(['user_id' => $user->id]);
+            }
 
             return $user;
         });
@@ -69,7 +76,17 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('files.index')->with('status', 'Welcome to Workora. Drop a file to get started.');
+        return $this->afterAuth($request)->with('status', 'Welcome to Workora.');
+    }
+
+    /** Pick up an invitation the person was looking at before they signed in, else go home. */
+    private function afterAuth(Request $request): RedirectResponse
+    {
+        if ($token = $request->session()->pull('invite_token')) {
+            return redirect()->route('invite.show', $token);
+        }
+
+        return redirect()->intended(route('dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse

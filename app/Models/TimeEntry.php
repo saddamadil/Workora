@@ -68,9 +68,15 @@ class TimeEntry extends Model
         return $this->belongsTo(Task::class);
     }
 
+    /** Hours to two decimals, the same rule invoices use, so a timesheet and the invoice built from it always agree. */
+    public function billableHours(): float
+    {
+        return round($this->minutes / 60, 2);
+    }
+
     public function amountMinor(): int
     {
-        return (int) round($this->minutes / 60 * ($this->rate_minor ?? 0));
+        return (int) round($this->billableHours() * ($this->rate_minor ?? 0));
     }
 
     public function isLocked(): bool

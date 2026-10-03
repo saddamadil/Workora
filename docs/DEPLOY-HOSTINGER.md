@@ -1,71 +1,78 @@
 # Deploying to Hostinger (shared hosting)
 
-Target in these notes: `https://freelancy.saddamadil.in`.
+These notes use the subdomain `freelancy.saddamadil.in`. Replace it with yours.
 
-## 1. Build the package
+## 1. Build the upload package
 
 ```bash
+# SQLite (simplest, one file)
 scripts/build-deploy.sh freelancy.saddamadil.in
+
+# or MySQL/MariaDB (what hPanel's "Databases" gives you)
+DB_CONNECTION=mysql DB_DATABASE=u123_workora DB_USERNAME=u123_workora scripts/build-deploy.sh freelancy.saddamadil.in
 ```
 
-Output: `dist/workora-freelancy.saddamadil.in.zip` (about 18 MB) containing
+Output: `dist/workora-<domain>.zip` (about 18 MB) with
 
-- `workora/` : the app, `vendor/`, a migrated SQLite database and a production `.env`
-  with a fresh `APP_KEY`
-- `webroot/` : the public files and an `index.php` that finds `workora/` on its own
+- `workora/`: the app, `vendor/`, a production `.env` with a fresh `APP_KEY`
+  (and a migrated `database.sqlite` when using SQLite)
+- `webroot/`: the public files and an `index.php` that finds `workora/` on its own
 
-The script needs PHP, Composer, Node and `zip`. It does not touch your local `.env`.
+Needs PHP, Composer, Node and `zip` on your computer. It never touches your local `.env`.
 
-## 2. Make the subdomain point at this hosting account
+## 2. MySQL only: create the tables
 
-The subdomain's DNS and the hosting account must match. In hPanel:
+phpMyAdmin has no command line, so import a ready-made file instead of running migrations:
 
-1. Add `saddamadil.in` to this hosting plan (or create the subdomain if the domain is
-   already there). If the domain's nameservers are elsewhere, add an A record for
-   `freelancy` pointing at this server's IP instead.
-2. Note the subdomain's **document root** that hPanel shows (for example
-   `public_html/freelancy`).
-3. Advanced > PHP Configuration: choose PHP 8.3 or higher, and set
-   `upload_max_filesize` = 100M and `post_max_size` = 110M.
-4. SSL: turn on the free certificate for the subdomain.
+```bash
+DB_DATABASE=scratch DB_USERNAME=root DB_PASSWORD=secret scripts/export-schema.sh   # needs a local MariaDB
+```
 
-## 3. Upload
+In hPanel open **Databases > phpMyAdmin**, pick your database, **Import**, choose `dist/workora-schema.sql`.
+It has one statement per line and `DROP TABLE IF EXISTS`, so it is safe to run again. You should end up
+with 42 tables. (Tested on MariaDB 10.11, which is what Hostinger runs.)
 
-Fastest is the File Manager: upload the zip, then Extract.
+## 3. Point the subdomain at the right folder
 
-1. Extract in the folder that **contains** `public_html` (the account's home folder in
-   the File Manager). This creates `workora/` and `webroot/` there.
-2. Move everything inside `webroot/` (including the hidden `.htaccess`) into the
-   subdomain's document root. Then delete the empty `webroot/` folder and the zip.
-3. Make sure these are writable (permission 755 normally works; try 775 if you see a
-   500 error): `workora/storage`, `workora/bootstrap/cache`, `workora/database`.
+Each website on Hostinger has its **own** File Manager and folder. In hPanel > **Websites**, click
+**Dashboard** next to `freelancy.saddamadil.in`, then **Files > File Manager**. That shows the folder
+that contains this site's `public_html`.
 
-`workora/` must stay outside the document root: it holds `.env`, the database and every
-uploaded file.
+1. Upload the zip into that top folder (next to `public_html`, not inside it) and extract it. You get
+   `workora/` and `webroot/`.
+2. Move everything inside `webroot/` into `public_html/`, including the hidden `.htaccess`. Delete
+   `webroot/` and the zip.
+3. Never leave `workora/` inside `public_html`: it holds `.env`, the database and every uploaded file.
+4. Make `workora/storage`, `workora/bootstrap/cache` (and `workora/database` for SQLite) writable.
+5. hPanel > Advanced > PHP Configuration: PHP 8.3+ (8.4 if offered), `upload_max_filesize` 100M,
+   `post_max_size` 110M. Turn on SSL for the subdomain.
 
-## 4. Check it
+## 4. Finish `.env` and test
 
-Open the site, register, upload a file, create a share link and open it in a private
-window. If you see a 500 error, read `workora/storage/logs/laravel.log`.
+For MySQL, open `workora/.env` in the File Manager and replace `PUT_YOUR_DATABASE_PASSWORD_HERE`.
+Check `APP_URL=https://freelancy.saddamadil.in` matches the real address letter for letter.
 
-## 5. Google Drive
+Open `https://freelancy.saddamadil.in/robots.txt` (should show text), then the home page, then register.
+A 500 error: read `workora/storage/logs/laravel.log`. A 403: `index.php` is not directly in the
+subdomain's `public_html`.
 
-In your Google OAuth client add `https://freelancy.saddamadil.in/drive/callback` as an
-authorized redirect URI. Then edit `workora/.env` in the File Manager and fill in
-`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. While the consent screen is in Testing
-mode only listed test users can connect.
+## Email
+
+Invitations work without email: the link is shown on screen to copy and send. To also email it, set
+`MAIL_MAILER=smtp` and the host, port, username and password from hPanel > Emails in `workora/.env`.
 
 ## Updating later
 
-Rebuild and upload again, but **do not overwrite** these, or you lose your data:
+Rebuild and upload again, but **do not overwrite** these or you lose data:
 
-- `workora/database/database.sqlite` (accounts, file records, links)
-- `workora/storage/app/` (the uploaded files)
-- `workora/.env` (your key and Google credentials)
+- `workora/.env`
+- `workora/storage/app/` (uploaded files)
+- `workora/database/database.sqlite` (SQLite only)
 
-If new migrations are added and you have no SSH, run them locally against a copy of the
-live database file, then upload that file back.
+New migrations on MySQL: run `scripts/export-schema.sh` only for a fresh database. For an existing one,
+apply just the new migration's SQL by hand in phpMyAdmin (ask for it) or use SSH and `php artisan migrate`.
 
 ## Backups
 
-Download `workora/database/database.sqlite` and `workora/storage/app/private/` regularly.
+Download your database (phpMyAdmin > Export, or the SQLite file) and `workora/storage/app/private/`
+regularly. Uploaded files live only there.

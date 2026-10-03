@@ -25,7 +25,7 @@ class SetCurrentOrganization
 
         // Public pages (share links, sign-in) and the onboarding screen itself must
         // not require a company, or a user with none could never create one.
-        if (! $user || $request->routeIs('onboarding.*', 'logout')) {
+        if (! $user || $request->routeIs('onboarding.*', 'logout', 'invite.*', 'profile.*')) {
             return $next($request);
         }
 

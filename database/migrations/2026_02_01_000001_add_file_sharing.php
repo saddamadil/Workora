@@ -8,11 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('files', function (Blueprint $table) {
-            $table->string('source')->default('upload')->after('visibility'); // upload, google_drive
-            $table->string('drive_file_id')->nullable()->after('source');
-        });
-
         // Public links to a single file. The token is the credential, so it is
         // long and random; the optional password is stored hashed.
         Schema::create('share_links', function (Blueprint $table) {
@@ -31,25 +26,10 @@ return new class extends Migration
 
             $table->index(['organization_id', 'file_id']);
         });
-
-        // One Google account per user. Tokens are encrypted at rest by the model.
-        Schema::create('drive_connections', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->unique()->constrained()->cascadeOnDelete();
-            $table->string('google_email')->nullable();
-            $table->text('access_token');
-            $table->text('refresh_token')->nullable();
-            $table->timestamp('expires_at')->nullable();
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('drive_connections');
         Schema::dropIfExists('share_links');
-        Schema::table('files', function (Blueprint $table) {
-            $table->dropColumn(['source', 'drive_file_id']);
-        });
     }
 };

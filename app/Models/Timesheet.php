@@ -65,9 +65,7 @@ class Timesheet extends Model
         $entries = $this->entries()->where('is_billable', true)->get();
 
         $this->total_minutes = (int) $entries->sum('minutes');
-        $this->total_amount_minor = (int) $entries->sum(
-            fn (TimeEntry $entry) => (int) round($entry->minutes / 60 * ($entry->rate_minor ?? 0))
-        );
+        $this->total_amount_minor = (int) $entries->sum(fn (TimeEntry $entry) => $entry->amountMinor());
 
         $this->save();
     }

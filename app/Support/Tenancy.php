@@ -78,6 +78,17 @@ class Tenancy
         return $this->membership?->role;
     }
 
+    public function isFreelancer(): bool
+    {
+        return $this->role()?->isFreelancer() ?? false;
+    }
+
+    /** A member of the company's own team, as opposed to a freelancer. */
+    public function isStaff(): bool
+    {
+        return $this->role() !== null && ! $this->isFreelancer();
+    }
+
     public function isUnscoped(): bool
     {
         return $this->unscoped;

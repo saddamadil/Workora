@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
+use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -72,6 +73,25 @@ class Project extends Model
     }
 
     /** Used by ProjectPolicy to decide whether a non-privileged user can see this. */
+    public const STATUSES = ['planning', 'active', 'on_hold', 'completed', 'cancelled'];
+
+    /** Projects this person may see: everything for finance/admin roles, else where they are a member. */
+    public function scopeVisibleTo($query, User $user)
+    {
+        if (app(Tenancy::class)->role()?->seesAllProjects()) {
+            return $query;
+        }
+
+        return $query->whereHas('members', fn ($m) => $m->where('user_id', $user->id));
+    }
+
+    /** Everything this project has cost so far in logged billable time, in minor units. */
+    public function trackedCostMinor(): int
+    {
+        return (int) $this->timeEntries()->where('is_billable', true)->get()
+            ->sum(fn (TimeEntry $e) => $e->amountMinor());
+    }
+
     public function hasMember(User|string $user): bool
     {
         $id = $user instanceof User ? $user->id : $user;

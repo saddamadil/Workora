@@ -21,6 +21,6 @@ class OnboardingController extends Controller
         $organization = $workspaces->createFor($request->user(), $data['workspace']);
         $request->session()->put('current_organization_id', $organization->id);
 
-        return redirect()->route('files.index');
+        return redirect()->route('dashboard');
     }
 }

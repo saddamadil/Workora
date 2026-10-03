@@ -52,7 +52,7 @@ class InvoicePolicy
     public function submit(User $user, Invoice $invoice): bool
     {
         return $invoice->user_id === $user->id
-            && $invoice->status === 'draft'
+            && in_array($invoice->status, ['draft', 'rejected'], true)
             && $invoice->items()->exists();
     }
 

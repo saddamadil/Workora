@@ -19,7 +19,7 @@ class FileLibrary
 {
     public function __construct(private Tenancy $tenancy) {}
 
-    public function storeUpload(UploadedFile $upload, User $user, ?string $folder = null): File
+    public function storeUpload(UploadedFile $upload, User $user, ?string $folder = null, array $extra = []): File
     {
         $name = $this->cleanName($upload->getClientOriginalName());
         $disk = config('workora.disk');
@@ -27,7 +27,7 @@ class FileLibrary
 
         Storage::disk($disk)->putFileAs(dirname($path), $upload, basename($path));
 
-        return File::create([
+        return File::create($extra + [
             'folder' => $folder ?: $this->guessFolder($upload->getMimeType()),
             'original_name' => $name,
             'path' => $path,
@@ -36,34 +36,8 @@ class FileLibrary
             'size_bytes' => $upload->getSize(),
             'checksum' => hash_file('sha256', $upload->getRealPath()),
             'visibility' => 'organization',
-            'source' => 'upload',
             'uploaded_by' => $user->id,
         ]);
-    }
-
-    /** Store a file that already exists on local disk (a Drive download in a temp file). */
-    public function storeFromPath(string $localPath, string $name, ?string $mime, User $user, array $extra = []): File
-    {
-        $name = $this->cleanName($name);
-        $disk = config('workora.disk');
-        $path = $this->newPath($name);
-
-        $stream = fopen($localPath, 'rb');
-        Storage::disk($disk)->put($path, $stream);
-        is_resource($stream) && fclose($stream);
-
-        return File::create(array_merge([
-            'folder' => $this->guessFolder($mime),
-            'original_name' => $name,
-            'path' => $path,
-            'disk' => $disk,
-            'mime_type' => $mime,
-            'size_bytes' => filesize($localPath),
-            'checksum' => hash_file('sha256', $localPath),
-            'visibility' => 'organization',
-            'source' => 'upload',
-            'uploaded_by' => $user->id,
-        ], $extra));
     }
 
     /** Stream a stored file to the browser, inline or as a download. */
@@ -86,21 +60,6 @@ class FileLibrary
             ]),
             $inline ? 'inline' : 'attachment',
         );
-    }
-
-    /** Copy a stored file to a local temp path (needed for non-local disks) and return it. */
-    public function toTempFile(File $file): string
-    {
-        $tmp = tempnam(sys_get_temp_dir(), 'workora_');
-        $read = Storage::disk($file->disk)->readStream($file->path);
-        abort_unless($read, 404, 'The file is missing from storage.');
-
-        $write = fopen($tmp, 'wb');
-        stream_copy_to_stream($read, $write);
-        fclose($write);
-        fclose($read);
-
-        return $tmp;
     }
 
     public function cleanName(string $name): string

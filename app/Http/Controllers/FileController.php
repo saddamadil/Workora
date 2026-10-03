@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\File;
+use App\Models\Project;
 use App\Models\ShareLink;
 use App\Services\FileLibrary;
 use App\Support\Tenancy;
@@ -23,6 +24,7 @@ class FileController extends Controller
         $sort = $request->string('sort')->toString();
 
         $files = File::query()
+            ->visibleTo($request->user())
             ->with('uploadedBy:id,name')
             ->withCount(['shareLinks as active_links_count' => fn ($q) => $q->whereNull('revoked_at')
                 ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))])
@@ -54,10 +56,17 @@ class FileController extends Controller
             'files' => ['required', 'array', 'min:1', 'max:50'],
             'files.*' => ['required', 'file', "max:{$maxKb}"],
             'folder' => ['nullable', 'string', 'max:60'],
+            'project_id' => ['nullable', 'uuid'],
         ], [
             'files.*.max' => 'Each file must be '.config('workora.max_upload_mb').' MB or smaller.',
             'files.*.uploaded' => 'A file did not finish uploading. It may be larger than the server allows.',
         ]);
+
+        // A file can be filed under a project, but only one the uploader can see.
+        $projectId = null;
+        if ($request->filled('project_id')) {
+            $projectId = Project::query()->visibleTo($request->user())->whereKey($request->input('project_id'))->firstOrFail()->id;
+        }
 
         $saved = [];
         $skipped = [];
@@ -69,7 +78,7 @@ class FileController extends Controller
                 continue;
             }
 
-            $saved[] = $library->storeUpload($upload, $request->user(), $request->input('folder'));
+            $saved[] = $library->storeUpload($upload, $request->user(), $request->input('folder'), ['project_id' => $projectId]);
         }
 
         $message = count($saved).' '.str('file')->plural(count($saved)).' uploaded.';
@@ -87,11 +96,15 @@ class FileController extends Controller
     /** Inline view for images and PDFs; anything else is sent as a download. */
     public function show(File $file, FileLibrary $library): StreamedResponse
     {
+        $this->authorize('view', $file);
+
         return $library->response($file, inline: $file->isInlineViewable());
     }
 
     public function download(File $file, FileLibrary $library): StreamedResponse
     {
+        $this->authorize('view', $file);
+
         return $library->response($file, inline: false);
     }
 

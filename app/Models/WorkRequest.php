@@ -88,7 +88,10 @@ class WorkRequest extends Model
      */
     public function currentAmountMinor(): ?int
     {
+        // messages() is ordered oldest-first; reorder() drops that, or latest() would only
+        // be a tie-breaker and the first counter-offer would win over the last.
         return $this->messages()
+            ->reorder()
             ->whereNotNull('proposed_amount_minor')
             ->latest()
             ->value('proposed_amount_minor') ?? $this->proposed_amount_minor;

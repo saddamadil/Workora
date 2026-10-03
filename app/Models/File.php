@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
+use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,13 +20,23 @@ class File extends Model
     protected $fillable = [
         'organization_id', 'project_id', 'attachable_type', 'attachable_id',
         'folder', 'original_name', 'path', 'disk', 'mime_type', 'size_bytes',
-        'checksum', 'version', 'replaces_file_id', 'visibility', 'source', 'drive_file_id',
-        'uploaded_by',
+        'checksum', 'version', 'replaces_file_id', 'visibility', 'uploaded_by',
     ];
 
     protected function casts(): array
     {
         return ['size_bytes' => 'integer', 'version' => 'integer'];
+    }
+
+    /** Freelancers see their own uploads and files on projects they belong to. */
+    public function scopeVisibleTo($query, User $user)
+    {
+        if (! app(Tenancy::class)->isFreelancer()) {
+            return $query;
+        }
+
+        return $query->where(fn ($q) => $q->where('uploaded_by', $user->id)
+            ->orWhereIn('project_id', ProjectMember::query()->where('user_id', $user->id)->select('project_id')));
     }
 
     public function project(): BelongsTo

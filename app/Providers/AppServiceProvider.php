@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Enums\OrganizationRole as Role;
 use App\Models\File;
 use App\Models\Invoice;
 use App\Models\Project;
 use App\Policies\FilePolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\ProjectPolicy;
+use App\Policies\TaskPolicy;
 use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -32,16 +34,45 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Coarse capabilities. Row-level rules live in the policies.
+        $role = fn () => app(Tenancy::class)->role();
+        Gate::define('staff', fn () => $role() !== null && ! $role()->isFreelancer());
+        Gate::define('freelancer', fn () => $role()?->isFreelancer() ?? false);
+        Gate::define('track-time', fn () => $role() !== null && $role() !== Role::Viewer);
+        Gate::define('see-money', fn () => $role()?->seesMoney() ?? false);
+        Gate::define('manage-team', fn () => in_array($role(), [Role::Owner, Role::Admin], true));
+        Gate::define('manage-clients', fn () => in_array($role(), [Role::Owner, Role::Admin, Role::ProjectManager], true));
+        Gate::define('manage-contracts', fn () => in_array($role(), [Role::Owner, Role::Admin, Role::Finance], true));
+        Gate::define('review-time', fn () => in_array($role(), [Role::Owner, Role::Admin, Role::ProjectManager], true));
+        Gate::define('pay', fn () => $role()?->canApprovePayment() ?? false);
+
         Gate::policy(Project::class, ProjectPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(File::class, FilePolicy::class);
+        Gate::policy(Task::class, TaskPolicy::class);
 
         // Fail loudly in development when a relationship isn't eager loaded, or
         // when code sets an attribute that isn't fillable.
-        // The sidebar shows storage used on every signed-in page.
+        // Cheap and needed by nearly every page (no queries): who and where we are.
+        View::composer('*', function ($view) {
+            $tenancy = app(Tenancy::class);
+
+            if ($tenancy->check()) {
+                $view->with(['org' => $tenancy->organization(), 'role' => $tenancy->role()]);
+            }
+        });
+
+        // The sidebar shows storage used and the company switcher on every signed-in page.
         View::composer('layouts.app', function ($view) {
-            if (app(Tenancy::class)->check()) {
-                $view->with(['usedBytes' => (int) File::sum('size_bytes'), 'totalFiles' => File::count()]);
+            $tenancy = app(Tenancy::class);
+
+            if ($tenancy->check()) {
+                $user = auth()->user();
+                $view->with([
+                    'usedBytes' => (int) File::sum('size_bytes'),
+                    'totalFiles' => File::count(),
+                    'myOrgs' => $user->organizations()->wherePivot('status', 'active')->get(['organizations.id', 'organizations.name', 'organizations.slug']),
+                ]);
             }
         });
 

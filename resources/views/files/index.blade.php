@@ -81,7 +81,7 @@
                 @if ($search || $type || $folder)
                     <a href="{{ route('files.index') }}" class="text-brand-600 hover:underline">Clear filters</a>
                 @else
-                    Drop something above, or <a href="{{ route('drive.index') }}" class="text-brand-600 hover:underline">import from Google Drive</a>.
+                    Drop something above to get started.
                 @endif
             </p>
         </div>
@@ -104,8 +104,7 @@
                             {{ $file->humanSize() }} · {{ $file->created_at->diffForHumans() }}
                         </div>
                         <div class="mt-1 flex flex-wrap gap-1.5 text-xs">
-                            @if ($file->source === 'google_drive') <span class="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700"><i class="bi bi-google"></i> Drive</span> @endif
-                            @if ($file->active_links_count) <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700"><i class="bi bi-link-45deg"></i> Shared</span> @endif
+                                            @if ($file->active_links_count) <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700"><i class="bi bi-link-45deg"></i> Shared</span> @endif
                             @if ($file->folder) <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{{ $file->folder }}</span> @endif
                         </div>
 
@@ -124,11 +123,6 @@
                                     <a href="{{ route('files.show', $file) }}" target="_blank" rel="noopener" class="menu-item"><i class="bi bi-box-arrow-up-right"></i> Open</a>
                                     @can('update', $file)
                                         <button type="button" @click="rename = true; open = false" class="menu-item"><i class="bi bi-pencil"></i> Rename</button>
-                                    @endcan
-                                    @can('share', $file)
-                                        <form method="POST" action="{{ route('files.drive', $file) }}">@csrf
-                                            <button class="menu-item"><i class="bi bi-google"></i> Save to Google Drive</button>
-                                        </form>
                                     @endcan
                                     @can('delete', $file)
                                         <form method="POST" action="{{ route('files.destroy', $file) }}" onsubmit="return confirm('Delete this file? Its share links will stop working.')">@csrf @method('DELETE')

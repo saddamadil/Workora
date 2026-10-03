@@ -97,17 +97,19 @@ class Invoice extends Model
         $this->save();
     }
 
-    /** Next invoice number for a freelancer within one company. */
-    public static function nextNumber(string $organizationId, string $userId): string
+    /**
+     * Invoice numbers are unique per company, so the sequence is per company and
+     * year. (A per-freelancer sequence would hand two freelancers the same number.)
+     */
+    public static function nextNumber(string $organizationId, ?string $userId = null): string
     {
         $year = now()->year;
+        $n = static::withoutGlobalScopes()->where('organization_id', $organizationId)->whereYear('issue_date', $year)->count() + 1;
 
-        $count = static::withoutGlobalScopes()
-            ->where('organization_id', $organizationId)
-            ->where('user_id', $userId)
-            ->whereYear('issue_date', $year)
-            ->count();
+        do {
+            $number = sprintf('INV-%d-%04d', $year, $n++);
+        } while (static::withoutGlobalScopes()->where('organization_id', $organizationId)->where('number', $number)->exists());
 
-        return sprintf('INV-%d-%04d', $year, $count + 1);
+        return $number;
     }
 }

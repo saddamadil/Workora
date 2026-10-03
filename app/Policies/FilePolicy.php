@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\OrganizationRole;
 use App\Models\File;
+use App\Models\ProjectMember;
 use App\Models\User;
 use App\Support\Tenancy;
 
@@ -16,6 +17,21 @@ class FilePolicy
 {
     public function __construct(private Tenancy $tenancy) {}
 
+    /** Staff see every file in the company; freelancers only their own and their projects'. */
+    public function view(User $user, File $file): bool
+    {
+        if ($this->role() === null) {
+            return false;
+        }
+
+        if (! $this->role()->isFreelancer()) {
+            return true;
+        }
+
+        return $file->uploaded_by === $user->id
+            || ($file->project_id && ProjectMember::where('project_id', $file->project_id)->where('user_id', $user->id)->exists());
+    }
+
     public function create(User $user): bool
     {
         return $this->role() !== null && $this->role() !== OrganizationRole::Viewer;
@@ -23,12 +39,12 @@ class FilePolicy
 
     public function update(User $user, File $file): bool
     {
-        return $this->create($user);
+        return $this->create($user) && $this->view($user, $file);
     }
 
     public function share(User $user, File $file): bool
     {
-        return $this->create($user);
+        return $this->create($user) && $this->view($user, $file);
     }
 
     public function delete(User $user, File $file): bool
