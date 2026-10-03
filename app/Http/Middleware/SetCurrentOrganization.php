@@ -23,19 +23,25 @@ class SetCurrentOrganization
     {
         $user = $request->user();
 
-        if (! $user) {
+        // Public pages (share links, sign-in) and the onboarding screen itself must
+        // not require a company, or a user with none could never create one.
+        if (! $user || $request->routeIs('onboarding.*', 'logout')) {
             return $next($request);
         }
 
         $organizationId = $request->session()->get('current_organization_id');
 
-        $membership = OrganizationMember::withoutGlobalScopes()
+        $memberships = fn () => OrganizationMember::withoutGlobalScopes()
             ->with('organization')
             ->where('user_id', $user->id)
-            ->when($organizationId, fn ($q) => $q->where('organization_id', $organizationId))
             ->where('status', 'active')
-            ->orderBy('created_at')
-            ->first();
+            ->orderBy('created_at');
+
+        // Prefer the company chosen in the session, but fall back to any active one:
+        // a stale id (membership removed, session outliving it) must not strand a user
+        // who still belongs somewhere else.
+        $membership = ($organizationId ? $memberships()->where('organization_id', $organizationId)->first() : null)
+            ?? $memberships()->first();
 
         if (! $membership) {
             $this->tenancy->clear();
