@@ -1,4 +1,63 @@
-# Freelancer Operations Platform — Foundation
+# Workora
+
+Upload documents and images, share them with a link, and move files to and from
+Google Drive. Built on Laravel 13 with Tailwind CSS, Alpine.js and Bootstrap Icons.
+
+## What works
+
+- **Accounts and workspaces.** Registering creates a private workspace with you as owner.
+  Everything is isolated per workspace (see `docs/TENANCY.md`).
+- **Upload.** Drag and drop or browse, many files at once, per-file progress, size limit
+  and a blocklist of executable extensions. Search, filter by images / documents / folder,
+  rename, delete. Images and PDFs preview in the browser.
+- **Share.** One click makes a public link. Optional password, expiry (1, 7 or 30 days) and
+  download limit. Links can be turned off at any time from *Shared links*, and stop working
+  when the file is deleted.
+- **Google Drive.** Connect with OAuth, browse folders, search, import files (Google Docs,
+  Sheets and Slides arrive as .docx / .xlsx / .pptx), and save any workspace file to Drive.
+
+## Run it locally
+
+```bash
+composer install          # needs PHP 8.4 for the committed composer.lock
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate
+npm install && npm run build
+php artisan serve
+```
+
+Open http://localhost:8000 and create an account. For hot reload use `npm run dev`.
+
+PHP's own limits apply before the app's. To accept the default 100 MB uploads set
+`upload_max_filesize=100M` and `post_max_size=110M` in `php.ini`.
+
+## Turning on Google Drive
+
+1. Google Cloud Console: enable the **Google Drive API**.
+2. Create an **OAuth client ID** (type *Web application*) and add
+   `https://your-domain/drive/callback` as an authorised redirect URI.
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`.
+
+The app requests `drive.readonly` (browse and import) and `drive.file` (save copies).
+Both are Google "restricted/sensitive" scopes: while your OAuth consent screen is in
+*Testing* mode only listed test users can connect; going public requires Google's
+verification review. Tokens are stored encrypted.
+
+## Tests
+
+```bash
+php artisan test
+```
+
+Drive calls are faked with `Http::fake()`; the suite never contacts Google.
+
+---
+
+# Foundation notes
+
+The sections below describe the original schema-first groundwork the app is built on.
 
 Phase 0/1 groundwork for a multi-tenant SaaS where companies manage the freelancers
 they already work with. Laravel 11+ and PostgreSQL 15+.

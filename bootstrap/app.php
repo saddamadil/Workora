@@ -4,6 +4,7 @@ use App\Http\Middleware\SetCurrentOrganization;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,6 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetCurrentOrganization::class,
         ]);
+
+        // Route-model binding (/files/{file}) queries tenant-scoped models, so the
+        // tenant has to be resolved first. Without this the binding runs against
+        // "no company" and every tenant model 404s.
+        $middleware->prependToPriorityList(
+            before: SubstituteBindings::class,
+            prepend: SetCurrentOrganization::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

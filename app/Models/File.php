@@ -19,7 +19,8 @@ class File extends Model
     protected $fillable = [
         'organization_id', 'project_id', 'attachable_type', 'attachable_id',
         'folder', 'original_name', 'path', 'disk', 'mime_type', 'size_bytes',
-        'checksum', 'version', 'replaces_file_id', 'visibility', 'uploaded_by',
+        'checksum', 'version', 'replaces_file_id', 'visibility', 'source', 'drive_file_id',
+        'uploaded_by',
     ];
 
     protected function casts(): array
@@ -61,10 +62,60 @@ class File extends Model
         return Storage::disk($this->disk)->temporaryUrl($this->path, now()->addMinutes($minutes));
     }
 
+    public function shareLinks(): HasMany
+    {
+        return $this->hasMany(ShareLink::class);
+    }
+
+    public function isImage(): bool
+    {
+        return str_starts_with((string) $this->mime_type, 'image/');
+    }
+
+    /**
+     * Safe to render in the browser. SVG is excluded on purpose: it can carry
+     * script, so it is only ever served as a download.
+     */
+    public function isInlineViewable(): bool
+    {
+        $mime = (string) $this->mime_type;
+
+        return $mime === 'application/pdf'
+            || (str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml');
+    }
+
+    public function extension(): string
+    {
+        return strtolower(pathinfo($this->original_name, PATHINFO_EXTENSION));
+    }
+
+    /** Bootstrap Icons class and a tint for the file-type badge. */
+    public function icon(): array
+    {
+        $ext = $this->extension();
+
+        return match (true) {
+            $this->isImage() => ['bi-file-earmark-image', 'text-emerald-600 bg-emerald-50'],
+            $ext === 'pdf' => ['bi-file-earmark-pdf', 'text-red-600 bg-red-50'],
+            in_array($ext, ['doc', 'docx', 'odt', 'rtf', 'txt', 'md']) => ['bi-file-earmark-text', 'text-blue-600 bg-blue-50'],
+            in_array($ext, ['xls', 'xlsx', 'csv', 'ods']) => ['bi-file-earmark-spreadsheet', 'text-green-600 bg-green-50'],
+            in_array($ext, ['ppt', 'pptx', 'odp', 'key']) => ['bi-file-earmark-slides', 'text-orange-600 bg-orange-50'],
+            in_array($ext, ['zip', 'rar', '7z', 'tar', 'gz']) => ['bi-file-earmark-zip', 'text-amber-600 bg-amber-50'],
+            str_starts_with((string) $this->mime_type, 'video/') => ['bi-file-earmark-play', 'text-purple-600 bg-purple-50'],
+            str_starts_with((string) $this->mime_type, 'audio/') => ['bi-file-earmark-music', 'text-pink-600 bg-pink-50'],
+            default => ['bi-file-earmark', 'text-slate-600 bg-slate-100'],
+        };
+    }
+
     public function humanSize(): string
     {
+        return static::formatBytes($this->size_bytes);
+    }
+
+    public static function formatBytes(int $bytes): string
+    {
         $units = ['B', 'KB', 'MB', 'GB'];
-        $size = $this->size_bytes;
+        $size = $bytes;
         $unit = 0;
 
         while ($size >= 1024 && $unit < count($units) - 1) {
@@ -72,6 +123,6 @@ class File extends Model
             $unit++;
         }
 
-        return round($size, 1) . ' ' . $units[$unit];
+        return round($size, 1).' '.$units[$unit];
     }
 }
