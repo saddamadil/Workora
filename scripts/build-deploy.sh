@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Builds an upload-ready package for shared hosting (Hostinger and similar).
 #
-#   scripts/build-deploy.sh [domain]       default: frelancy.saddamadil.in
+#   scripts/build-deploy.sh [domain]       default: freelancy.saddamadil.in
 #
 # Output: dist/workora-<domain>.zip containing
 #   workora/        the app, vendor/ and a migrated SQLite database. Upload NEXT TO public_html.
 #   webroot/        the web root contents. Move INTO the subdomain's document root.
 set -euo pipefail
 
-DOMAIN="${1:-frelancy.saddamadil.in}"
+DOMAIN="${1:-freelancy.saddamadil.in}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/dist"
 WORK="$(mktemp -d)"

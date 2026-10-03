@@ -1,14 +1,14 @@
 # Deploying to Hostinger (shared hosting)
 
-Target in these notes: `https://frelancy.saddamadil.in`.
+Target in these notes: `https://freelancy.saddamadil.in`.
 
 ## 1. Build the package
 
 ```bash
-scripts/build-deploy.sh frelancy.saddamadil.in
+scripts/build-deploy.sh freelancy.saddamadil.in
 ```
 
-Output: `dist/workora-frelancy.saddamadil.in.zip` (about 18 MB) containing
+Output: `dist/workora-freelancy.saddamadil.in.zip` (about 18 MB) containing
 
 - `workora/` : the app, `vendor/`, a migrated SQLite database and a production `.env`
   with a fresh `APP_KEY`
@@ -22,9 +22,9 @@ The subdomain's DNS and the hosting account must match. In hPanel:
 
 1. Add `saddamadil.in` to this hosting plan (or create the subdomain if the domain is
    already there). If the domain's nameservers are elsewhere, add an A record for
-   `frelancy` pointing at this server's IP instead.
+   `freelancy` pointing at this server's IP instead.
 2. Note the subdomain's **document root** that hPanel shows (for example
-   `public_html/frelancy`).
+   `public_html/freelancy`).
 3. Advanced > PHP Configuration: choose PHP 8.3 or higher, and set
    `upload_max_filesize` = 100M and `post_max_size` = 110M.
 4. SSL: turn on the free certificate for the subdomain.
@@ -50,7 +50,7 @@ window. If you see a 500 error, read `workora/storage/logs/laravel.log`.
 
 ## 5. Google Drive
 
-In your Google OAuth client add `https://frelancy.saddamadil.in/drive/callback` as an
+In your Google OAuth client add `https://freelancy.saddamadil.in/drive/callback` as an
 authorized redirect URI. Then edit `workora/.env` in the File Manager and fill in
 `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. While the consent screen is in Testing
 mode only listed test users can connect.
