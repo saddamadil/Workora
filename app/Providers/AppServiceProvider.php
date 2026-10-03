@@ -11,6 +11,7 @@ use App\Policies\ProjectPolicy;
 use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Shared hosts often terminate TLS in front of PHP, so the request can look like
+        // plain HTTP. Generate https links (share URLs, OAuth redirect) when APP_URL is https.
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         Gate::policy(Project::class, ProjectPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(File::class, FilePolicy::class);
