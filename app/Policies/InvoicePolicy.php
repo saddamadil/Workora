@@ -3,14 +3,15 @@
 namespace App\Policies;
 
 use App\Models\Invoice;
+use App\Models\OrganizationMember;
 use App\Models\User;
+use App\Support\Permissions;
 use App\Support\Tenancy;
 
 /**
- * Invoices have an asymmetry worth being explicit about: the freelancer owns the
- * document until it is submitted, and the company owns the decision afterwards.
- * Neither side can edit an approved invoice — corrections are a credit note or a
- * new invoice, so the financial trail stays intact.
+ * Freelancers issue their own invoices. Finance roles (owner, admin, finance) may also prepare
+ * one on a freelancer's behalf; the freelancer still owns it, and whoever prepared it cannot be
+ * the person who approves it.
  */
 class InvoicePolicy
 {
@@ -35,25 +36,44 @@ class InvoicePolicy
             return $invoice->user_id === $user->id;
         }
 
+        // Someone else's draft is private until it is sent, unless this person prepared it.
+        if ($invoice->status === 'draft' && $invoice->prepared_by !== $user->id) {
+            return false;
+        }
+
         return $role->seesMoney();
     }
 
+    /** May start an invoice at all (for themselves, or for a freelancer). */
     public function create(User $user): bool
     {
-        return $this->tenancy->role()?->isFreelancer() ?? false;
+        $role = $this->tenancy->role();
+
+        return $role !== null && ($role->isFreelancer() || Permissions::allows('manage-contracts', $role));
+    }
+
+    /** May issue an invoice in this particular freelancer's name. */
+    public function createFor(User $user, string $freelancerId): bool
+    {
+        if (! $this->create($user)) {
+            return false;
+        }
+
+        if ($this->tenancy->isFreelancer()) {
+            return $freelancerId === $user->id;
+        }
+
+        return OrganizationMember::query()->where('user_id', $freelancerId)->where('member_type', 'freelancer')->where('status', 'active')->exists();
     }
 
     public function update(User $user, Invoice $invoice): bool
     {
-        return $invoice->user_id === $user->id
-            && in_array($invoice->status, ['draft', 'rejected'], true);
+        return $this->owns($user, $invoice) && in_array($invoice->status, ['draft', 'rejected'], true);
     }
 
     public function submit(User $user, Invoice $invoice): bool
     {
-        return $invoice->user_id === $user->id
-            && in_array($invoice->status, ['draft', 'rejected'], true)
-            && $invoice->items()->exists();
+        return $this->update($user, $invoice) && $invoice->items()->exists();
     }
 
     public function approve(User $user, Invoice $invoice): bool
@@ -63,9 +83,8 @@ class InvoicePolicy
         return $role !== null
             && $role->canApprovePayment()
             && in_array($invoice->status, ['submitted', 'under_review'], true)
-            // The person who raised it cannot approve it, even if they somehow
-            // hold both roles in this company.
-            && $invoice->user_id !== $user->id;
+            && $invoice->user_id !== $user->id
+            && $invoice->prepared_by !== $user->id;
     }
 
     public function reject(User $user, Invoice $invoice): bool
@@ -84,7 +103,18 @@ class InvoicePolicy
 
     public function delete(User $user, Invoice $invoice): bool
     {
-        // Approved invoices are financial records. Void them, never delete them.
-        return $invoice->user_id === $user->id && $invoice->status === 'draft';
+        return $this->owns($user, $invoice) && $invoice->status === 'draft';
+    }
+
+    /** A copy is a new draft, so it follows the rules for starting one. */
+    public function duplicate(User $user, Invoice $invoice): bool
+    {
+        return $this->view($user, $invoice) && $this->createFor($user, $invoice->user_id);
+    }
+
+    /** The freelancer who issues it, or the person who prepared it for them. */
+    private function owns(User $user, Invoice $invoice): bool
+    {
+        return $invoice->user_id === $user->id || $invoice->prepared_by === $user->id;
     }
 }

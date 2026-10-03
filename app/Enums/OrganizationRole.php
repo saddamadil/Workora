@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Permissions;
+
 enum OrganizationRole: string
 {
     case Owner = 'owner';
@@ -28,25 +30,25 @@ enum OrganizationRole: string
     /** Roles that can see every project in the company without being a project member. */
     public function seesAllProjects(): bool
     {
-        return in_array($this, [self::Owner, self::Admin, self::Finance, self::Viewer], true);
+        return Permissions::allows('view-all-projects', $this);
     }
 
     /** Roles that can see budgets, rates, invoices and payments. */
     public function seesMoney(): bool
     {
-        return in_array($this, [self::Owner, self::Admin, self::Finance], true);
+        return Permissions::allows('see-money', $this);
     }
 
     /** Roles that can approve submitted work. */
     public function canApproveWork(): bool
     {
-        return in_array($this, [self::Owner, self::Admin, self::ProjectManager], true);
+        return Permissions::allows('approve-work', $this);
     }
 
     /** Roles that can approve invoices and release payments. */
     public function canApprovePayment(): bool
     {
-        return in_array($this, [self::Owner, self::Finance], true);
+        return Permissions::allows('approve-invoices', $this);
     }
 
     public function isFreelancer(): bool

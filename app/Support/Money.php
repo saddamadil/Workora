@@ -18,7 +18,21 @@ class Money
         $symbol = self::CURRENCIES[$currency] ?? $currency.' ';
         $value = ($minor ?? 0) / 100;
 
-        return ($value < 0 ? '-' : '').$symbol.number_format(abs($value), 2);
+        $number = $currency === 'INR' ? self::indianGrouping(abs($value)) : number_format(abs($value), 2);
+
+        return ($value < 0 ? '-' : '').$symbol.$number;
+    }
+
+    /** 845000 as "8,45,000.00": the last three digits, then groups of two (lakh and crore). */
+    public static function indianGrouping(float $value): string
+    {
+        [$whole, $fraction] = explode('.', number_format($value, 2, '.', ''));
+
+        if (strlen($whole) > 3) {
+            $whole = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', substr($whole, 0, -3)).','.substr($whole, -3);
+        }
+
+        return $whole.'.'.$fraction;
     }
 
     /** "1,250.50" or 1250.5 to 125050. Blank or invalid is null. */

@@ -19,18 +19,31 @@ class Organization extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'logo_path', 'website', 'industry',
+        'name', 'legal_name', 'email', 'phone', 'slug', 'logo_path', 'website', 'industry',
         'address_line1', 'address_line2', 'city', 'state', 'postal_code',
         'country_code', 'tax_identifier', 'default_tax_rate',
-        'base_currency', 'timezone', 'settings',
+        'base_currency', 'timezone', 'settings', 'tax_ids',
     ];
 
     protected function casts(): array
     {
         return [
             'settings' => 'array',
+            'tax_ids' => 'array',
             'default_tax_rate' => 'decimal:2',
         ];
+    }
+
+    /** Name to print on documents: the legal name when there is one. */
+    public function documentName(): string
+    {
+        return $this->legal_name ?: $this->name;
+    }
+
+    /** An invoice default saved under settings, e.g. template or payment terms. */
+    public function setting(string $key, mixed $default = null): mixed
+    {
+        return ($this->settings ?? [])[$key] ?? $default;
     }
 
     public function getRouteKeyName(): string

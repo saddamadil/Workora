@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\AssetController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationSwitchController;
+use App\Http\Controllers\PaymentProfileController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
@@ -54,11 +56,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::get('/team/members', [TeamController::class, 'members'])->name('team.members');
+    Route::get('/team/members/{member}', [TeamController::class, 'member'])->name('team.member');
+    Route::get('/team/invitations', [TeamController::class, 'invitations'])->name('team.invitations');
+    Route::get('/team/roles', [TeamController::class, 'roles'])->name('team.roles');
+    Route::get('/team/payment-profiles', [PaymentProfileController::class, 'index'])->name('team.payment-profiles');
+    Route::post('/team/payment-profiles', [PaymentProfileController::class, 'store'])->name('team.payment-profiles.store');
+    Route::put('/team/payment-profiles/{profile}', [PaymentProfileController::class, 'update'])->name('team.payment-profiles.update');
+    Route::post('/team/payment-profiles/{profile}/default', [PaymentProfileController::class, 'makeDefault'])->name('team.payment-profiles.default');
+    Route::delete('/team/payment-profiles/{profile}', [PaymentProfileController::class, 'destroy'])->name('team.payment-profiles.destroy');
     Route::post('/team/invite', [TeamController::class, 'invite'])->name('team.invite');
     Route::delete('/team/invitations/{invitation}', [TeamController::class, 'revoke'])->name('team.revoke');
     Route::patch('/team/{member}', [TeamController::class, 'update'])->name('team.update');
 
-    Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('clients', ClientController::class);
 
     Route::resource('projects', ProjectController::class);
     Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.members.add');
@@ -103,16 +114,35 @@ Route::middleware('auth')->group(function () {
     Route::post('/contracts/{contract}/milestones/{milestone}/approve', [ContractController::class, 'approveMilestone'])->name('contracts.milestones.approve');
     Route::post('/contracts/{contract}/milestones/{milestone}/reopen', [ContractController::class, 'reopenMilestone'])->name('contracts.milestones.reopen');
 
-    Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'update', 'destroy']);
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/team/invoices', [InvoiceController::class, 'index'])->name('team.invoices');
+    Route::get('/invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
+    Route::post('/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
+    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('/invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
+    Route::put('/invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
+    Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
     Route::post('/invoices/{invoice}/items', [InvoiceController::class, 'addItem'])->name('invoices.items.add');
     Route::delete('/invoices/{invoice}/items/{item}', [InvoiceController::class, 'removeItem'])->name('invoices.items.remove');
     Route::post('/invoices/{invoice}/import-time', [InvoiceController::class, 'importTime'])->name('invoices.import-time');
     Route::post('/invoices/{invoice}/import-milestones', [InvoiceController::class, 'importMilestones'])->name('invoices.import-milestones');
-    Route::post('/invoices/{invoice}/submit', [InvoiceController::class, 'submit'])->name('invoices.submit');
+    Route::post('/invoices/{invoice}/payment-profile', [InvoiceController::class, 'paymentProfile'])->name('invoices.payment-profile');
+    Route::post('/invoices/{invoice}/template', [InvoiceController::class, 'template'])->name('invoices.template');
+    Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->name('invoices.preview');
+    Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'preview'])->name('invoices.print');
+    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+    Route::post('/invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate'])->name('invoices.duplicate');
+    Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
     Route::post('/invoices/{invoice}/approve', [InvoiceController::class, 'approve'])->name('invoices.approve');
     Route::post('/invoices/{invoice}/reject', [InvoiceController::class, 'reject'])->name('invoices.reject');
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('invoices.payments.store');
+    Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+
+    Route::get('/assets/avatar/{user}', [AssetController::class, 'avatar'])->name('assets.avatar');
+    Route::get('/assets/company-logo', [AssetController::class, 'companyLogo'])->name('assets.company-logo');
+    Route::get('/assets/client-logo/{client}', [AssetController::class, 'clientLogo'])->name('assets.client-logo');
+    Route::get('/profile/signature', [AssetController::class, 'signature'])->name('profile.signature');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');

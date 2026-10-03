@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\OrganizationRole as Role;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\Permissions;
 use App\Support\Tenancy;
 
 /**
@@ -30,7 +31,7 @@ class TaskPolicy
 
     public function create(User $user): bool
     {
-        return in_array($this->tenancy->role(), [Role::Owner, Role::Admin, Role::ProjectManager, Role::TeamMember], true);
+        return Permissions::allows('create-task', $this->tenancy->role());
     }
 
     public function update(User $user, Task $task): bool
@@ -40,7 +41,7 @@ class TaskPolicy
 
     public function delete(User $user, Task $task): bool
     {
-        return in_array($this->tenancy->role(), [Role::Owner, Role::Admin, Role::ProjectManager], true)
+        return Permissions::allows('delete-task', $this->tenancy->role())
             && $this->view($user, $task);
     }
 

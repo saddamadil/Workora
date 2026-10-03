@@ -216,12 +216,15 @@ class TeamAndAccessTest extends WorkoraTestCase
 
         $this->actingAs($fiona)->post(route('profile.update'), [
             'name' => 'Fiona F', 'timezone' => 'Asia/Kolkata', 'headline' => 'Designer', 'hourly_rate' => '700', 'default_currency' => 'INR', 'availability' => 'limited',
-            'payout_type' => 'upi', 'payout_label' => 'fiona@okbank', 'payout_notes' => 'Mornings only',
         ])->assertRedirect();
         $this->assertSame('Fiona F', $fiona->fresh()->name);
         $this->assertSame(70000, $fiona->freelancerProfile->default_hourly_rate_minor);
+
+        $this->actingAs($fiona)->post(route('team.payment-profiles.store'), [
+            'kind' => 'domestic', 'label' => 'Main UPI', 'currency' => 'INR', 'account_holder' => 'Fiona F', 'upi_id' => 'fiona@okbank', 'notes' => 'Mornings only',
+        ])->assertRedirect();
         $payout = PayoutMethod::where('user_id', $fiona->id)->firstOrFail();
-        $this->assertSame('fiona@okbank', $payout->label);
+        $this->assertSame('Main UPI', $payout->label);
         $this->assertNotSame('Mornings only', $payout->getRawOriginal('details_encrypted'), 'payout notes are stored encrypted');
 
         $this->actingAs($fiona)->post(route('profile.password'), ['current_password' => 'wrong', 'password' => 'brand-new-pass', 'password_confirmation' => 'brand-new-pass'])->assertSessionHasErrors('current_password');
@@ -234,7 +237,7 @@ class TeamAndAccessTest extends WorkoraTestCase
     {
         $owner = $this->userWithWorkspace('Olive');
 
-        $this->actingAs($owner)->post(route('settings.company.update'), ['name' => 'Olive Studio', 'base_currency' => 'USD', 'timezone' => 'UTC', 'default_tax_rate' => 12.5, 'tax_identifier' => 'GSTIN1'])->assertRedirect();
+        $this->actingAs($owner)->post(route('settings.company.update'), ['name' => 'Olive Studio', 'base_currency' => 'USD', 'timezone' => 'UTC', 'default_tax_rate' => 12.5, 'invoice_template' => 'modern', 'payment_terms_days' => 30])->assertRedirect();
         $org = $this->orgOf($owner)->fresh();
         $this->assertSame('Olive Studio', $org->name);
         $this->assertSame('USD', $org->base_currency);

@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Support\Permissions;
 use App\Support\Tenancy;
 
 /**
@@ -45,8 +46,7 @@ class ProjectPolicy
     {
         $role = $this->tenancy->role();
 
-        return $role !== null
-            && in_array($role->value, ['owner', 'admin', 'project_manager'], true);
+        return Permissions::allows('create-project', $role);
     }
 
     public function update(User $user, Project $project): bool
@@ -67,7 +67,7 @@ class ProjectPolicy
 
     public function delete(User $user, Project $project): bool
     {
-        return in_array($this->tenancy->role()?->value, ['owner', 'admin'], true);
+        return Permissions::allows('delete-project', $this->tenancy->role());
     }
 
     /** Budget, spend to date, and freelancer rates on this project. */

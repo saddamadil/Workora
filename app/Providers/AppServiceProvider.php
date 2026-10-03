@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Enums\OrganizationRole as Role;
 use App\Models\File;
 use App\Models\Invoice;
 use App\Models\Project;
@@ -10,6 +9,7 @@ use App\Policies\FilePolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TaskPolicy;
+use App\Support\Permissions;
 use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -34,17 +34,14 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        // Coarse capabilities. Row-level rules live in the policies.
+        // Coarse capabilities, all read from App\Support\Permissions.
         $role = fn () => app(Tenancy::class)->role();
         Gate::define('staff', fn () => $role() !== null && ! $role()->isFreelancer());
         Gate::define('freelancer', fn () => $role()?->isFreelancer() ?? false);
-        Gate::define('track-time', fn () => $role() !== null && $role() !== Role::Viewer);
-        Gate::define('see-money', fn () => $role()?->seesMoney() ?? false);
-        Gate::define('manage-team', fn () => in_array($role(), [Role::Owner, Role::Admin], true));
-        Gate::define('manage-clients', fn () => in_array($role(), [Role::Owner, Role::Admin, Role::ProjectManager], true));
-        Gate::define('manage-contracts', fn () => in_array($role(), [Role::Owner, Role::Admin, Role::Finance], true));
-        Gate::define('review-time', fn () => in_array($role(), [Role::Owner, Role::Admin, Role::ProjectManager], true));
-        Gate::define('pay', fn () => $role()?->canApprovePayment() ?? false);
+        foreach (['track-time', 'see-money', 'manage-team', 'manage-clients', 'manage-contracts', 'review-time'] as $ability) {
+            Gate::define($ability, fn () => Permissions::allows($ability, $role()));
+        }
+        Gate::define('pay', fn () => Permissions::allows('approve-invoices', $role()));
 
         Gate::policy(Project::class, ProjectPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);

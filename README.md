@@ -24,6 +24,20 @@ Built on Laravel 13, Tailwind CSS 4, Alpine.js and Bootstrap Icons. SQLite, MySQ
   hours and milestones (an hour can never be billed twice), earnings and payment history.
 - Profile with rate, availability and how to be paid.
 
+**Team, profiles and invoicing**
+
+- Team has six tabs: Overview, Members (cards), Invitations, Roles & permissions (generated from the
+  same rules the app enforces), Payment profiles and Invoices.
+- Reusable profiles: company (logo, legal name, tax IDs shown per country), freelancer (photo,
+  address, tax numbers, signature, invoice prefix), client (logo, billing address, tax info) and
+  payment profiles (domestic bank/UPI, international IBAN/SWIFT/routing/sort code/ABA/payment link),
+  stored encrypted and masked on screen.
+- Invoice generator in three steps (details, services, preview and send), five templates, domestic and
+  international modes, GST/VAT/custom tax lines, exchange rate and INR equivalent, PDF download, print,
+  duplicate, send (with optional emailed PDF), mark as paid, and a dashboard with filters and search.
+- Workora prints the tax settings you choose and flags what looks incomplete ("Review tax settings").
+  It does not decide which tax applies to you; check with your accountant.
+
 **Files for everyone**: drag-and-drop upload, previews, rename, folders, and share links with an
 optional password, expiry and download limit.
 
@@ -82,10 +96,11 @@ scripts/                build-deploy.sh (upload package), export-schema.sh (MySQ
 - **A freelancer sees a task only if assigned to it**; budgets and rates are hidden from them.
 - **Financial records are never hard-deleted**: invoices are voided or rejected, audit rows are
   immutable, and invoiced time entries are locked.
-- **Invoice numbers are per company and year** (`INV-2026-0001`); contract references likewise.
+- **Invoice numbers are per freelancer and financial year** (`INV-2026-27-001` for India's April to
+  March year, calendar year elsewhere); contract references are per company.
 
 ## Not built yet
 
 Email notifications beyond the invitation, an in-app notification list, recurring invoices, expenses,
-PDF export (invoices print from the browser), disputes and escrow, and a public API. See
+disputes and escrow, and a public API. See
 `docs/MVP-SCOPE.md` for the reasoning behind what was left out.

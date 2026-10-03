@@ -11,6 +11,16 @@ use App\Models\Timesheet;
 
 class ContractsInvoicesTest extends WorkoraTestCase
 {
+    /** Valid step-1 form data; the invoice starts as a draft. */
+    private function details($contract, array $over = []): array
+    {
+        return $over + [
+            'bill_to_type' => 'company', 'contract_id' => $contract->id, 'issue_date' => now()->toDateString(),
+            'terms_days' => (string) $contract->payment_terms_days, 'currency' => 'INR', 'invoice_type' => 'domestic',
+            'template' => 'professional', 'tax_treatment' => 'none',
+        ];
+    }
+
     private function approvedHours(string $hours = '5'): array
     {
         $owner = $this->userWithWorkspace('Olive');
@@ -103,7 +113,7 @@ class ContractsInvoicesTest extends WorkoraTestCase
         $this->assertSame('approved', $design->fresh()->status);
 
         // Invoice it.
-        $this->actingAs($fiona)->post(route('invoices.store'), ['contract_id' => $contract->id])->assertRedirect();
+        $this->actingAs($fiona)->post(route('invoices.store'), $this->details($contract))->assertRedirect();
         $invoice = Invoice::withoutGlobalScopes()->firstOrFail();
         $this->assertSame(now()->addDays(7)->toDateString(), $invoice->due_date->toDateString());
         $this->actingAs($fiona)->post(route('invoices.import-milestones', $invoice))->assertRedirect();
@@ -121,9 +131,9 @@ class ContractsInvoicesTest extends WorkoraTestCase
     {
         [$owner, $fiona, $finance, $contract] = $this->approvedHours('5');
 
-        $this->actingAs($fiona)->post(route('invoices.store'), ['contract_id' => $contract->id])->assertRedirect();
+        $this->actingAs($fiona)->post(route('invoices.store'), $this->details($contract))->assertRedirect();
         $invoice = Invoice::withoutGlobalScopes()->firstOrFail();
-        $this->assertSame('INV-'.now()->year.'-0001', $invoice->number);
+        $this->assertMatchesRegularExpression('/^INV-'.now()->year.'-001$/', $invoice->number);
 
         $this->actingAs($fiona)->post(route('invoices.import-time', $invoice))->assertRedirect();
         $invoice->refresh();
@@ -132,13 +142,13 @@ class ContractsInvoicesTest extends WorkoraTestCase
 
         // The same hours cannot be billed twice.
         $this->actingAs($fiona)->post(route('invoices.import-time', $invoice))->assertSessionHas('error');
-        $this->actingAs($fiona)->post(route('invoices.store'), ['contract_id' => $contract->id]);
+        $this->actingAs($fiona)->post(route('invoices.store'), $this->details($contract));
         $second = Invoice::withoutGlobalScopes()->where('id', '!=', $invoice->id)->firstOrFail();
         $this->actingAs($fiona)->post(route('invoices.import-time', $second))->assertSessionHas('error');
-        $this->assertSame('INV-'.now()->year.'-0002', $second->number);
+        $this->assertMatchesRegularExpression('/^INV-'.now()->year.'-002$/', $second->number);
 
         // Tax and a manual line.
-        $this->actingAs($fiona)->put(route('invoices.update', $invoice), ['due_date' => now()->addDays(10)->toDateString(), 'tax_rate' => '18', 'notes' => 'Thanks'])->assertRedirect();
+        $this->actingAs($fiona)->put(route('invoices.update', $invoice), $this->details($contract, ['terms_days' => 'custom', 'due_date' => now()->addDays(10)->toDateString(), 'tax_treatment' => 'custom', 'tax_rate' => '18', 'tax_label' => 'Tax', 'notes' => 'Thanks']))->assertRedirect();
         $this->actingAs($fiona)->post(route('invoices.items.add', $invoice), ['description' => 'Stock photos', 'quantity' => 2, 'unit' => 'items', 'unit_rate' => '100'])->assertRedirect();
         $invoice->refresh();
         $this->assertSame(320000, $invoice->subtotal_minor);
@@ -147,7 +157,7 @@ class ContractsInvoicesTest extends WorkoraTestCase
 
         // Only the issuer edits and submits; reviewers cannot touch a draft.
         $this->actingAs($owner)->post(route('invoices.items.add', $invoice), ['description' => 'x', 'quantity' => 1, 'unit' => 'items', 'unit_rate' => 1])->assertForbidden();
-        $this->actingAs($fiona)->post(route('invoices.submit', $invoice))->assertRedirect();
+        $this->actingAs($fiona)->post(route('invoices.send', $invoice))->assertRedirect();
         $this->assertSame('submitted', $invoice->fresh()->status);
         $this->actingAs($fiona)->post(route('invoices.items.add', $invoice), ['description' => 'x', 'quantity' => 1, 'unit' => 'items', 'unit_rate' => 1])->assertForbidden();
 
@@ -177,27 +187,28 @@ class ContractsInvoicesTest extends WorkoraTestCase
 
         $this->actingAs($fiona)->get(route('payments.index'))->assertOk()->assertSee('3,776.00');
         $this->actingAs($finance)->get(route('payments.index'))->assertOk()->assertSee('Fiona');
-        $this->actingAs($finance)->get(route('invoices.show', $invoice))->assertOk()->assertSee('Stock photos')->assertSee('Still owed');
+        $this->actingAs($finance)->get(route('invoices.show', $invoice))->assertOk()->assertSee('Payments')->assertSee('invoices/'.$invoice->id.'/preview', false);
     }
 
     public function test_rejected_invoice_can_be_fixed_and_resent_and_drafts_return_time(): void
     {
         [$owner, $fiona, $finance, $contract] = $this->approvedHours('2');
 
-        $this->actingAs($fiona)->post(route('invoices.store'), ['contract_id' => $contract->id]);
+        $this->actingAs($fiona)->post(route('invoices.store'), $this->details($contract));
         $invoice = Invoice::withoutGlobalScopes()->firstOrFail();
         $this->actingAs($fiona)->post(route('invoices.import-time', $invoice));
-        $this->actingAs($fiona)->post(route('invoices.submit', $invoice));
+        $this->actingAs($fiona)->post(route('invoices.send', $invoice));
 
         $this->actingAs($owner)->post(route('invoices.reject', $invoice), ['reason' => 'Wrong tax'])->assertRedirect();
         $this->assertSame('rejected', $invoice->fresh()->status);
-        $this->actingAs($fiona)->get(route('invoices.show', $invoice))->assertSee('Wrong tax');
-        $this->actingAs($fiona)->put(route('invoices.update', $invoice), ['due_date' => now()->addDays(5)->toDateString(), 'tax_rate' => '5'])->assertRedirect();
-        $this->actingAs($fiona)->post(route('invoices.submit', $invoice))->assertRedirect();
+        $this->actingAs($fiona)->get(route('invoices.show', $invoice), [])->assertRedirect();
+        $this->actingAs($fiona)->get(route('invoices.edit', [$invoice, 'step' => 3]))->assertSee('Wrong tax');
+        $this->actingAs($fiona)->put(route('invoices.update', $invoice), $this->details($contract, ['terms_days' => 'custom', 'due_date' => now()->addDays(5)->toDateString(), 'tax_treatment' => 'custom', 'tax_rate' => '5', 'tax_label' => 'Tax']))->assertRedirect();
+        $this->actingAs($fiona)->post(route('invoices.send', $invoice))->assertRedirect();
         $this->assertSame('submitted', $invoice->fresh()->status);
 
         // A draft that is deleted frees its hours.
-        $this->actingAs($fiona)->post(route('invoices.store'), ['contract_id' => $contract->id]);
+        $this->actingAs($fiona)->post(route('invoices.store'), $this->details($contract));
         Invoice::withoutGlobalScopes()->whereKey($invoice->id)->update(['status' => 'draft']);
         $this->actingAs($fiona)->delete(route('invoices.destroy', $invoice))->assertRedirect(route('invoices.index'));
         $this->assertFalse(TimeEntry::withoutGlobalScopes()->firstOrFail()->isLocked());
@@ -209,13 +220,13 @@ class ContractsInvoicesTest extends WorkoraTestCase
         $gus = $this->freelancer($owner, 'Gus');
         $bob = $this->userWithWorkspace('Bob');
 
-        $this->actingAs($fiona)->post(route('invoices.store'), ['contract_id' => $contract->id]);
+        $this->actingAs($fiona)->post(route('invoices.store'), $this->details($contract));
         $invoice = Invoice::withoutGlobalScopes()->firstOrFail();
 
         $this->actingAs($gus)->get(route('invoices.show', $invoice))->assertForbidden();
         $this->actingAs($gus)->get(route('invoices.index'))->assertDontSee($invoice->number);
         $this->actingAs($bob)->get(route('invoices.show', $invoice))->assertNotFound();
-        $this->actingAs($gus)->post(route('invoices.store'), ['contract_id' => $contract->id])->assertNotFound();
+        $this->actingAs($gus)->post(route('invoices.store'), $this->details($contract))->assertNotFound();
     }
 
     public function test_invoice_total_matches_the_approved_timesheet_for_odd_minutes(): void
@@ -232,7 +243,7 @@ class ContractsInvoicesTest extends WorkoraTestCase
         $ts = Timesheet::withoutGlobalScopes()->firstOrFail();
         $this->actingAs($owner)->post(route('timesheets.approve', $ts));
 
-        $this->actingAs($fiona)->post(route('invoices.store'), ['contract_id' => $contract->id]);
+        $this->actingAs($fiona)->post(route('invoices.store'), $this->details($contract));
         $invoice = Invoice::withoutGlobalScopes()->firstOrFail();
         $this->actingAs($fiona)->post(route('invoices.import-time', $invoice));
 

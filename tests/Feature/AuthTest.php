@@ -55,7 +55,7 @@ class AuthTest extends WorkoraTestCase
         // With no company yet they are asked to wait for an invitation, not shown an error.
         $this->get(route('dashboard'))->assertRedirect(route('onboarding.index'));
         $this->get(route('onboarding.index'))->assertOk()->assertSee('Waiting for an invitation');
-        $this->get(route('profile.edit'))->assertOk()->assertSee('Freelancer profile');
+        $this->get(route('profile.edit'))->assertOk()->assertSee('Professional');
     }
 
     public function test_files_require_sign_in(): void
