@@ -27,6 +27,8 @@
         <div class="flex flex-wrap gap-3">
             <form method="POST" action="{{ route('invoices.import-time', $invoice) }}">@csrf
                 <button class="btn-secondary" @disabled(! $availableMinutes)><i class="bi bi-stopwatch"></i> Approved time <span class="text-slate-500">({{ hours($availableMinutes) }})</span></button></form>
+            @php $availableExpenses = $invoice->client_id ? \App\Models\Expense::query()->billableTo($invoice)->count() : 0; @endphp
+            @if ($availableExpenses)<form method="POST" action="{{ route('invoices.import-expenses', $invoice) }}">@csrf<button class="btn-secondary"><i class="bi bi-wallet2"></i> Billable expenses <span class="text-slate-500">({{ $availableExpenses }})</span></button></form>@endif
             @if ($invoice->contract?->type === 'milestone')
                 <form method="POST" action="{{ route('invoices.import-milestones', $invoice) }}">@csrf
                     <button class="btn-secondary" @disabled($availableMilestones->isEmpty())><i class="bi bi-flag"></i> Approved milestones ({{ $availableMilestones->count() }})</button></form>

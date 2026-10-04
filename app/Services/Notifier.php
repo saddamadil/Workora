@@ -20,6 +20,7 @@ class Notifier
         'request' => ['Work request', 'Conversations', true],
         'task' => ['New or completed task', 'Work', false],
         'project' => ['Project update', 'Work', false],
+        'booking' => ['Meeting booked or cancelled', 'Work', true],
         'file' => ['File uploaded', 'Work', false],
         'approval' => ['Approval requested or given', 'Work', true],
         'revision' => ['Changes requested', 'Work', true],

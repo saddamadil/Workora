@@ -262,6 +262,30 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.edit', [$invoice, 'step' => 2])->with('status', $entries->count().' time entries added.');
     }
 
+    /** Billable expenses (with their receipts kept on the expense) become lines at cost, and are marked billed. */
+    public function importExpenses(Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+        $expenses = \App\Models\Expense::query()->billableTo($invoice)->orderBy('spent_on')->get();
+        if ($expenses->isEmpty()) {
+            return back()->with('error', 'No billable, unbilled expenses in '.$invoice->currency.' for this client.');
+        }
+
+        DB::transaction(function () use ($invoice, $expenses) {
+            $position = $invoice->items()->count();
+            foreach ($expenses as $e) {
+                $invoice->items()->create([
+                    'description' => 'Expense: '.$e->description.' ('.$e->spent_on->format('d M').')', 'quantity' => 1, 'unit' => 'items', 'unit_rate_minor' => $e->amount_minor,
+                    'source_type' => \App\Models\Expense::class, 'source_id' => $e->id, 'position' => $position++,
+                ]);
+            }
+            \App\Models\Expense::whereKey($expenses->pluck('id'))->update(['billed_invoice_id' => $invoice->id]);
+            $invoice->recalculate();
+        });
+
+        return redirect()->route('invoices.edit', [$invoice, 'step' => 2])->with('status', $expenses->count().' expenses added at cost.');
+    }
+
     public function importMilestones(Invoice $invoice): RedirectResponse
     {
         $this->authorize('update', $invoice);
@@ -706,6 +730,11 @@ class InvoiceController extends Controller
         $timeIds = $items->where('source_type', TimeEntry::class)->pluck('source_id');
         if ($timeIds->isNotEmpty()) {
             TimeEntry::whereKey($timeIds)->update(['locked_at' => null]);
+        }
+
+        $expenseIds = $items->where('source_type', \App\Models\Expense::class)->pluck('source_id');
+        if ($expenseIds->isNotEmpty()) {
+            \App\Models\Expense::whereKey($expenseIds)->update(['billed_invoice_id' => null]);
         }
 
         $milestoneIds = $items->where('source_type', ContractMilestone::class)->pluck('source_id');

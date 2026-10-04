@@ -55,6 +55,12 @@ Route::prefix('s/{token}')->name('share.')->group(function () {
 // Invitation links work before sign-in; accepting needs an account.
 Route::get('/invite/{token}', [InvitationController::class, 'show'])->name('invite.show');
 
+// Public booking pages: anyone with the link can pick a free time.
+Route::get('/book/confirmed/{token}', [\App\Http\Controllers\PublicBookingController::class, 'confirmed'])->name('book.confirmed');
+Route::post('/book/confirmed/{token}/cancel', [\App\Http\Controllers\PublicBookingController::class, 'cancel'])->middleware('throttle:10,1')->name('book.cancel');
+Route::get('/book/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'show'])->name('book.show');
+Route::post('/book/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'store'])->middleware('throttle:10,1')->name('book.store');
+
 // Inbound email (reply-by-email). Authenticated by a shared secret, so no session or CSRF token.
 Route::post('/inbound/email', \App\Http\Controllers\InboundEmailController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])->middleware('throttle:60,1')->name('inbound.email');
 
@@ -117,6 +123,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
         Route::get('/payments', [PortalController::class, 'payments'])->name('payments');
         Route::get('/hours', [PortalController::class, 'hours'])->name('hours');
+        Route::get('/quotes', [\App\Http\Controllers\PortalDocumentsController::class, 'quotes'])->name('quotes');
+        Route::get('/quotes/{quote}', [\App\Http\Controllers\PortalDocumentsController::class, 'quote'])->name('quotes.show');
+        Route::post('/quotes/{quote}/accept', [\App\Http\Controllers\PortalDocumentsController::class, 'acceptQuote'])->name('quotes.accept');
+        Route::post('/quotes/{quote}/decline', [\App\Http\Controllers\PortalDocumentsController::class, 'declineQuote'])->name('quotes.decline');
+        Route::get('/agreements', [\App\Http\Controllers\PortalDocumentsController::class, 'agreements'])->name('agreements');
+        Route::get('/agreements/{agreement}', [\App\Http\Controllers\PortalDocumentsController::class, 'agreement'])->name('agreements.show');
+        Route::get('/agreements/{agreement}/pdf', [\App\Http\Controllers\AgreementController::class, 'pdf'])->name('agreements.pdf');
+        Route::post('/agreements/{agreement}/sign', [\App\Http\Controllers\PortalDocumentsController::class, 'sign'])->name('agreements.sign');
+        Route::post('/agreements/{agreement}/decline', [\App\Http\Controllers\PortalDocumentsController::class, 'declineAgreement'])->name('agreements.decline');
         Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
         Route::post('/invoices/{invoice}/paid', [PaymentReportController::class, 'store'])->name('invoices.paid');
         Route::get('/team', [PortalController::class, 'team'])->name('team');
@@ -251,12 +266,29 @@ Route::middleware('auth')->group(function () {
     Route::post('/invoices/{invoice}/items', [InvoiceController::class, 'addItem'])->name('invoices.items.add');
     Route::delete('/invoices/{invoice}/items/{item}', [InvoiceController::class, 'removeItem'])->name('invoices.items.remove');
     Route::post('/invoices/{invoice}/import-time', [InvoiceController::class, 'importTime'])->name('invoices.import-time');
+    Route::post('/invoices/{invoice}/import-expenses', [InvoiceController::class, 'importExpenses'])->name('invoices.import-expenses');
     Route::post('/invoices/{invoice}/import-milestones', [InvoiceController::class, 'importMilestones'])->name('invoices.import-milestones');
     Route::post('/invoices/{invoice}/payment-profile', [InvoiceController::class, 'paymentProfile'])->name('invoices.payment-profile');
     Route::post('/invoices/{invoice}/template', [InvoiceController::class, 'template'])->name('invoices.template');
     Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->name('invoices.preview');
     Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'preview'])->name('invoices.print');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+    Route::resource('quotes', \App\Http\Controllers\QuoteController::class)->except(['destroy'])->parameters(['quotes' => 'quote']);
+    Route::delete('/quotes/{quote}', [\App\Http\Controllers\QuoteController::class, 'destroy'])->name('quotes.destroy');
+    Route::post('/quotes/{quote}/send', [\App\Http\Controllers\QuoteController::class, 'send'])->name('quotes.send');
+    Route::resource('agreements', \App\Http\Controllers\AgreementController::class)->except(['destroy']);
+    Route::get('/agreements/{agreement}/pdf', [\App\Http\Controllers\AgreementController::class, 'pdf'])->name('agreements.pdf');
+    Route::delete('/agreements/{agreement}', [\App\Http\Controllers\AgreementController::class, 'destroy'])->name('agreements.destroy');
+    Route::post('/agreements/{agreement}/send', [\App\Http\Controllers\AgreementController::class, 'send'])->name('agreements.send');
+    Route::post('/agreements/{agreement}/void', [\App\Http\Controllers\AgreementController::class, 'void'])->name('agreements.void');
+    Route::get('/expenses', [\App\Http\Controllers\ExpenseController::class, 'index'])->name('expenses.index');
+    Route::post('/expenses', [\App\Http\Controllers\ExpenseController::class, 'store'])->name('expenses.store');
+    Route::delete('/expenses/{expense}', [\App\Http\Controllers\ExpenseController::class, 'destroy'])->name('expenses.destroy');
+    Route::get('/bookings', [\App\Http\Controllers\BookingController::class, 'index'])->name('bookings.index');
+    Route::post('/bookings/page', [\App\Http\Controllers\BookingController::class, 'save'])->name('bookings.save');
+    Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::post('/time-off', [\App\Http\Controllers\BookingController::class, 'storeTimeOff'])->name('timeoff.store');
+    Route::delete('/time-off/{timeOff}', [\App\Http\Controllers\BookingController::class, 'destroyTimeOff'])->name('timeoff.destroy');
     Route::get('/recurring-invoices', [\App\Http\Controllers\RecurringInvoiceController::class, 'index'])->name('recurring.index');
     Route::post('/invoices/{invoice}/recurring', [\App\Http\Controllers\RecurringInvoiceController::class, 'store'])->name('recurring.store');
     Route::post('/recurring-invoices/{recurring}/toggle', [\App\Http\Controllers\RecurringInvoiceController::class, 'toggle'])->name('recurring.toggle');
