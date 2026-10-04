@@ -205,4 +205,15 @@ class PlatformTest extends PortalTestCase
             $ok ? $res->assertRedirect('/clients') : $res->assertRedirect(route('notifications.index'));
         }
     }
+
+    public function test_the_profile_page_keeps_the_side_menu(): void
+    {
+        $sam = $this->solo();
+        $abc = $this->makeClient($sam, 'ABC GmbH', 'abc@example.com');
+        $alice = $this->portalUser($sam, $abc, 'Alice');
+
+        $this->actingAs($sam)->get(route('profile.edit'))->assertOk()->assertSee('My clients')->assertSee('My invoices');
+        $this->actingAs($alice)->get(route('profile.edit'))->assertRedirect(route('portal.dashboard'));
+        $this->actingAs($alice)->post(route('profile.password'), ['current_password' => 'secret-pass-1', 'password' => 'brand-new-pass', 'password_confirmation' => 'brand-new-pass'])->assertRedirect();
+    }
 }

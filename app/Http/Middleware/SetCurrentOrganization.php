@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 class SetCurrentOrganization
 {
     /** Route names a client login may use. */
-    public const CLIENT_ROUTES = ['portal.*', 'notifications.*', 'search.*', 'help', 'settings.index', 'settings.locale', 'invoices.preview', 'invoices.print', 'invoices.pdf', 'invoices.receipt', 'assets.*', 'organizations.switch'];
+    public const CLIENT_ROUTES = ['portal.*', 'profile.password', 'notifications.*', 'search.*', 'help', 'settings.index', 'settings.locale', 'invoices.preview', 'invoices.print', 'invoices.pdf', 'invoices.receipt', 'assets.*', 'organizations.switch'];
 
     public function __construct(private Tenancy $tenancy) {}
 
@@ -28,7 +28,7 @@ class SetCurrentOrganization
 
         // Public pages (share links, sign-in) and the onboarding screen itself must
         // not require a company, or a user with none could never create one.
-        if (! $user || $request->routeIs('onboarding.*', 'logout', 'invite.*', 'profile.*')) {
+        if (! $user || $request->routeIs('onboarding.*', 'logout', 'invite.*')) {
             return $next($request);
         }
 
@@ -48,6 +48,11 @@ class SetCurrentOrganization
 
         if (! $membership) {
             $this->tenancy->clear();
+
+            // The profile page works without a workspace; it just has no menu then.
+            if ($request->routeIs('profile.*')) {
+                return $next($request);
+            }
 
             // Signed in but with no active company: send them to onboarding or
             // to the pending-invitation screen rather than a half-scoped page.
