@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 
 // Needs one cron line on the server: * * * * * php /path/to/artisan schedule:run
 Illuminate\Support\Facades\Schedule::command('reminders:due')->dailyAt('08:00');
+Illuminate\Support\Facades\Schedule::command('invoices:recurring')->dailyAt('06:30');

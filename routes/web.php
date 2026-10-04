@@ -252,6 +252,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->name('invoices.preview');
     Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'preview'])->name('invoices.print');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+    Route::get('/recurring-invoices', [\App\Http\Controllers\RecurringInvoiceController::class, 'index'])->name('recurring.index');
+    Route::post('/invoices/{invoice}/recurring', [\App\Http\Controllers\RecurringInvoiceController::class, 'store'])->name('recurring.store');
+    Route::post('/recurring-invoices/{recurring}/toggle', [\App\Http\Controllers\RecurringInvoiceController::class, 'toggle'])->name('recurring.toggle');
+    Route::post('/recurring-invoices/{recurring}/run', [\App\Http\Controllers\RecurringInvoiceController::class, 'run'])->name('recurring.run');
+    Route::delete('/recurring-invoices/{recurring}', [\App\Http\Controllers\RecurringInvoiceController::class, 'destroy'])->name('recurring.destroy');
     Route::post('/invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate'])->name('invoices.duplicate');
     Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
     Route::post('/invoices/{invoice}/approve', [InvoiceController::class, 'approve'])->name('invoices.approve');

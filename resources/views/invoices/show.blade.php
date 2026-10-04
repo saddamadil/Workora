@@ -13,6 +13,14 @@
     <a href="{{ route('invoices.pdf', $invoice) }}" class="btn-secondary btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
     <a href="{{ route('invoices.print', $invoice) }}" target="_blank" rel="noopener" class="btn-secondary btn-sm"><i class="bi bi-printer"></i> Print</a>
     @if ($canDuplicate)<form method="POST" action="{{ route('invoices.duplicate', $invoice) }}">@csrf<button class="btn-secondary btn-sm"><i class="bi bi-files"></i> Duplicate</button></form>@endif
+    @if ($canDuplicate && $invoice->client_id)<details class="relative"><summary class="btn-secondary btn-sm cursor-pointer list-none"><i class="bi bi-arrow-repeat"></i> Make recurring</summary>
+        <form method="POST" action="{{ route('recurring.store', $invoice) }}" class="card absolute end-0 z-20 mt-2 w-72 space-y-3 p-4">@csrf
+            <div><label class="label" for="rf">Repeat</label><select id="rf" name="frequency" class="input">@foreach (\App\Models\RecurringInvoice::FREQUENCIES as $k => $v)<option value="{{ $k }}" @selected($k === 'monthly')>{{ $v }}</option>@endforeach</select></div>
+            <div><label class="label" for="rs">First invoice on</label><input id="rs" type="date" name="start_on" value="{{ now()->addMonth()->toDateString() }}" min="{{ now()->toDateString() }}" required class="input"></div>
+            <div><label class="label" for="re">Stop after (optional)</label><input id="re" type="date" name="ends_on" class="input"></div>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="auto_send" value="1"> Send to the client automatically</label>
+            <button class="btn-primary w-full">Create schedule</button>
+        </form></details>@endif
 </x-page-title>
 
 @if ($invoice->status === 'rejected' && $invoice->rejection_reason)

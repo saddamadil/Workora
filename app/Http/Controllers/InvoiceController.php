@@ -383,16 +383,7 @@ class InvoiceController extends Controller
         $this->authorize('submit', $invoice);
         $data = $request->validate(['email_to' => ['nullable', 'email', 'max:190']]);
 
-        $invoice->recalculate();
-        abort_if($invoice->total_minor <= 0, 422, 'The invoice total must be more than zero.');
-
-        // From here the parties and payment details are frozen into the invoice.
-        $invoice->update([
-            'status' => 'submitted', 'submitted_at' => now(), 'sent_at' => now(), 'rejection_reason' => null,
-            'snapshot' => $this->documents->snapshot($invoice),
-        ]);
-        AuditLog::record('invoice.sent', $invoice);
-        $this->tellClient($invoice, 'invoice', 'New invoice '.$invoice->number, money($invoice->total_minor, $invoice->currency).' due '.$invoice->due_date->format('d M Y'), route('portal.invoice', $invoice));
+        app(\App\Services\InvoiceSender::class)->send($invoice, $request->user());
 
         $message = 'Invoice sent for approval.';
         if (! empty($data['email_to'])) {
