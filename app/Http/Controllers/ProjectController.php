@@ -120,7 +120,7 @@ class ProjectController extends Controller
         ];
 
         if (in_array($tab, ['overview', 'files'], true)) {
-            $data['files'] = File::query()->visibleTo($user)->where('project_id', $project->id)->latest()->limit($tab === 'files' ? 200 : 6)->get();
+            $data['files'] = File::query()->current()->visibleTo($user)->where('project_id', $project->id)->latest()->limit($tab === 'files' ? 200 : 6)->get();
         }
         if ($tab === 'milestones') {
             $data['deliverables'] = $project->deliverables()->with('reviews.user:id,name', 'submittedBy:id,name', 'files')->get();

@@ -23,7 +23,7 @@ class PortalFileController extends Controller
     {
         $client = $this->ctx->client($request);
 
-        return [$client, File::query()->where('client_id', $client->id)->where('visible_to_client', true)];
+        return [$client, File::query()->current()->where('client_id', $client->id)->where('visible_to_client', true)];
     }
 
     public function index(Request $request): View

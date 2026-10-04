@@ -311,6 +311,11 @@ class TaskController extends Controller
 
         TaskComment::create(['task_id' => $task->id, 'user_id' => $request->user()->id, 'body' => $data['body']]);
 
+        // Only people who can already work on or oversee this task can be mentioned.
+        $overseers = \App\Models\OrganizationMember::query()->where('status', 'active')->whereIn('role', ['owner', 'admin', 'project_manager'])->pluck('user_id');
+        $people = \App\Models\User::query()->whereIn('id', $overseers->merge($task->assignees()->pluck('users.id')))->get();
+        app(\App\Services\Mentions::class)->notify($data['body'], $people, $request->user(), 'Task: '.$task->title, route('tasks.show', $task));
+
         return back();
     }
 

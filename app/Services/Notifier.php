@@ -16,6 +16,7 @@ class Notifier
     /** type => [label, group, email on by default] */
     public const TYPES = [
         'message' => ['New message', 'Conversations', false],
+        'mention' => ['Someone mentioned you', 'Conversations', true],
         'request' => ['Work request', 'Conversations', true],
         'task' => ['New or completed task', 'Work', false],
         'project' => ['Project update', 'Work', false],
@@ -29,7 +30,7 @@ class Notifier
     public function __construct(private Tenancy $tenancy) {}
 
     /** @param  iterable<User>|User  $users */
-    public function send(iterable|User $users, string $type, string $title, ?string $body = null, ?string $url = null, ?User $except = null): void
+    public function send(iterable|User $users, string $type, string $title, ?string $body = null, ?string $url = null, ?User $except = null, ?\Closure $replyTo = null): void
     {
         $users = $users instanceof User ? [$users] : $users;
 
@@ -46,7 +47,13 @@ class Notifier
 
             if (($prefs[$type]['email'] ?? (self::TYPES[$type][2] ?? false)) === true) {
                 try {
-                    Mail::raw($title.($body ? "\n\n".$body : '').($url ? "\n\n".url($url) : '')."\n\nYou can change which emails you get in Settings > Notifications.", fn ($m) => $m->to($user->email)->subject($title));
+                    Mail::raw($title.($body ? "\n\n".$body : '').($url ? "\n\n".url($url) : '')."\n\nYou can change which emails you get in Settings > Notifications.", function ($m) use ($user, $title, $replyTo) {
+                        $reply = $replyTo ? $replyTo($user) : null;
+                        $m->to($user->email)->subject($title);
+                        if ($reply) {
+                            $m->replyTo($reply);
+                        }
+                    });
                 } catch (\Throwable) {
                     // Mail may not be set up yet. The in-app notification is already saved.
                 }

@@ -39,6 +39,25 @@ class File extends Model
             ->orWhereIn('project_id', ProjectMember::query()->where('user_id', $user->id)->select('project_id')));
     }
 
+    /** Only the newest version of each file: older ones stay reachable from its history. */
+    public function scopeCurrent($query)
+    {
+        return $query->whereNotIn('id', static::query()->withoutGlobalScopes()->whereNotNull('replaces_file_id')->select('replaces_file_id'));
+    }
+
+    /** This file and every earlier version, newest first. */
+    public function history(): \Illuminate\Support\Collection
+    {
+        $chain = collect([$this]);
+        $cursor = $this;
+        while ($cursor->replaces_file_id && ($prev = static::withoutGlobalScopes()->where('organization_id', $this->organization_id)->find($cursor->replaces_file_id)) && $chain->count() < 50) {
+            $chain->push($prev);
+            $cursor = $prev;
+        }
+
+        return $chain;
+    }
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);

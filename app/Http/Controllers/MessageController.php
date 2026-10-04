@@ -136,7 +136,11 @@ class MessageController extends Controller
         AuditLog::record('message.sent', $message, ['project_id' => $project?->id, 'client_id' => $client->id]);
 
         $where = $project ? $client->name.' / '.$project->name : $client->name;
-        $notifier->send($this->ctx->audienceFor($me, $client), 'message', $me->name.' sent a message', $where.': '.str($body)->limit(120), $this->threadUrl($client, $project?->id), $me);
+        $audience = $this->ctx->audienceFor($me, $client);
+        $clientId = $client->id;
+        $projectId = $project?->id;
+        $notifier->send($audience, 'message', $me->name.' sent a message', $where.': '.str($body)->limit(120), $this->threadUrl($client, $project?->id), $me, fn ($u) => \App\Services\ReplyAddress::make($u->id, $clientId, $projectId));
+        app(\App\Services\Mentions::class)->notify($body, $audience->concat($this->ctx->staffToNotify()), $me, $where, $this->threadUrl($client, $project?->id));
 
         if ($request->expectsJson()) {
             return response()->json(['id' => $message->id], 201);

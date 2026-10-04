@@ -24,6 +24,7 @@ class FileController extends Controller
         $sort = $request->string('sort')->toString();
 
         $files = File::query()
+            ->current()
             ->visibleTo($request->user())
             ->with('uploadedBy:id,name')
             ->withCount(['shareLinks as active_links_count' => fn ($q) => $q->whereNull('revoked_at')

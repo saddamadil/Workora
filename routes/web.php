@@ -55,6 +55,9 @@ Route::prefix('s/{token}')->name('share.')->group(function () {
 // Invitation links work before sign-in; accepting needs an account.
 Route::get('/invite/{token}', [InvitationController::class, 'show'])->name('invite.show');
 
+// Inbound email (reply-by-email). Authenticated by a shared secret, so no session or CSRF token.
+Route::post('/inbound/email', \App\Http\Controllers\InboundEmailController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])->middleware('throttle:60,1')->name('inbound.email');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
@@ -154,6 +157,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/projects/{project}/files', [ProjectFileController::class, 'storeForProject'])->name('projects.files.store');
     Route::post('/clients/{client}/files', [ProjectFileController::class, 'storeForClient'])->name('clients.files.store');
+    Route::post('/files/{file}/version', [ProjectFileController::class, 'newVersion'])->name('files.version');
     Route::post('/files/{file}/client', [ProjectFileController::class, 'toggleClient'])->name('files.toggle-client');
 
     Route::post('/projects/{project}/milestones', [MilestoneController::class, 'store'])->name('projects.milestones.store');

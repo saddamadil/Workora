@@ -52,6 +52,29 @@ class ProjectFileController extends Controller
         return back()->with('status', $file->visible_to_client ? 'Shared with the client.' : 'No longer shared with the client.');
     }
 
+    /** Upload a newer copy of a file. The earlier one is kept in its history; links and sharing carry over. */
+    public function newVersion(Request $request, File $file, FileLibrary $library, ClientContext $ctx, Notifier $notifier): RedirectResponse
+    {
+        $this->authorize('update', $file);
+        $maxKb = config('workora.max_upload_mb') * 1024;
+        $request->validate(['file' => ['required', 'file', "max:{$maxKb}"]]);
+        $upload = $request->file('file');
+        abort_if($library->isBlocked($upload->getClientOriginalName()), 422, 'That file type is not allowed for security reasons.');
+        abort_if(File::query()->where('replaces_file_id', $file->id)->exists(), 422, 'A newer version already exists. Reload the page.');
+
+        $new = $library->storeUpload($upload, $request->user(), $file->folder, [
+            'project_id' => $file->project_id, 'client_id' => $file->client_id, 'visible_to_client' => $file->visible_to_client,
+            'version' => $file->version + 1, 'replaces_file_id' => $file->id,
+        ]);
+        AuditLog::record('file.version', $new, ['project_id' => $file->project_id, 'replaces' => $file->id, 'version' => $new->version]);
+
+        if ($new->visible_to_client && $new->client_id && ($client = Client::query()->find($new->client_id))) {
+            $notifier->send($ctx->clientUsers($client), 'file', 'Updated file: '.$new->original_name, 'Version '.$new->version.' is available', route('portal.files.index'), $request->user());
+        }
+
+        return back()->with('status', 'Version '.$new->version.' uploaded. Earlier versions are kept in the history.');
+    }
+
     private function save(Request $request, FileLibrary $library, ?Project $project, ?string $clientId): int
     {
         $maxKb = config('workora.max_upload_mb') * 1024;

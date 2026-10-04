@@ -13,7 +13,8 @@
     <form method="POST" action="{{ route('projects.files.store', $project) }}" enctype="multipart/form-data" class="card h-fit space-y-3 p-5">@csrf
         <h2 class="font-semibold text-slate-900">Upload</h2>
         <div><label class="label" for="pf-files">Files</label><input id="pf-files" type="file" name="files[]" multiple required class="input"></div>
-        <div><label class="label" for="pf-folder">Folder</label><select id="pf-folder" name="folder" class="input">@foreach ($folders as $f)<option>{{ $f }}</option>@endforeach</select></div>
+        <div><label class="label" for="pf-folder">Folder</label><input id="pf-folder" name="folder" list="folder-list" value="Documents" maxlength="60" class="input"><p class="mt-1 text-xs text-slate-500">Pick one or type a new folder name.</p></div>
+        <datalist id="folder-list">@foreach (collect($folders)->merge($files->pluck('folder'))->filter()->unique() as $f)<option value="{{ $f }}">@endforeach</datalist>
         @if ($project->client_id)
             <label class="flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" name="visible_to_client" value="1" class="mt-1 rounded border-slate-300"> <span>Share with {{ $project->client?->name }}<span class="block text-xs text-slate-500">Files are private until you share them.</span></span></label>
         @endif

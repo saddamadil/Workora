@@ -14,6 +14,9 @@ return [
         'php', 'phtml', 'phar', 'exe', 'msi', 'bat', 'cmd', 'com', 'scr', 'sh', 'js', 'jar', 'vbs', 'ps1', 'dll',
     ],
 
+    // Reply-by-email. Point an inbound email service (Mailgun, Postmark, SendGrid or similar) at POST /inbound/email.
+    'inbound_domain' => env('INBOUND_MAIL_DOMAIN'),
+    'inbound_secret' => env('INBOUND_MAIL_SECRET'),
     // The one person who can change workspaces' plans. Set PLATFORM_ADMIN_EMAIL in .env.
     'platform_admin_email' => env('PLATFORM_ADMIN_EMAIL'),
 
