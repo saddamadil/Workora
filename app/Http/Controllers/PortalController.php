@@ -116,7 +116,7 @@ class PortalController extends Controller
     public function invoices(): View
     {
         $client = $this->client();
-        $invoices = Invoice::query()->where('client_id', $client->id)->whereIn('status', array_merge(self::OPEN, ['paid']))->latest('issue_date')->get();
+        $invoices = Invoice::query()->where('client_id', $client->id)->whereIn('status', array_merge(self::OPEN, ['paid', 'void', 'refunded']))->latest('issue_date')->get();
         $open = $invoices->whereIn('status', self::OPEN);
 
         return view('portal.invoices', [
@@ -124,6 +124,8 @@ class PortalController extends Controller
             'due' => $open->groupBy('currency')->map(fn ($g) => (int) $g->sum(fn ($i) => $i->total_minor - $i->amount_paid_minor))->all(),
             'paid' => $invoices->groupBy('currency')->map(fn ($g) => (int) $g->sum('amount_paid_minor'))->filter()->all(),
             'overdue' => $open->filter(fn ($i) => $i->displayStatus() === 'overdue')->count(),
+            'nextDue' => $open->sortBy('due_date')->first(),
+            'history' => \App\Models\Payment::query()->with('invoice:id,number')->whereIn('invoice_id', $invoices->pluck('id'))->where('status', 'paid')->latest('paid_at')->limit(15)->get(),
         ]);
     }
 
@@ -138,10 +140,12 @@ class PortalController extends Controller
         }
 
         $invoice->load('payments', 'payoutMethod');
+        $reports = \App\Models\PaymentReport::query()->where('invoice_id', $invoice->id)->latest()->get();
 
         return view('portal.invoice', [
             'invoice' => $invoice,
             'payout' => app(\App\Services\InvoiceDocument::class)->payment($invoice),
+            'reports' => $reports,
         ]);
     }
 

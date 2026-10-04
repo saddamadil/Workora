@@ -14,7 +14,7 @@ class InvoiceStats
      */
     public static function summarize(Collection $invoices): array
     {
-        $sent = $invoices->whereNotIn('status', ['draft', 'rejected', 'void']);
+        $sent = $invoices->whereNotIn('status', ['draft', 'rejected', 'void', 'refunded']);
         $by = fn (Collection $rows, callable $fn) => $rows->groupBy('currency')->map(fn ($g) => (int) $g->sum($fn))->filter()->all();
 
         return [

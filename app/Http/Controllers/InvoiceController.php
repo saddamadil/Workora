@@ -170,6 +170,7 @@ class InvoiceController extends Controller
             'invoice' => $invoice,
             'payout' => \Illuminate\Support\Facades\Gate::allows('pay') || $this->tenancy->isClient() ? $this->documents->payment($invoice) : null,
             'canDuplicate' => $request->user()->can('duplicate', $invoice),
+            'reports' => \App\Models\PaymentReport::query()->with('reportedBy:id,name')->where('invoice_id', $invoice->id)->latest()->get(),
         ]);
     }
 
@@ -399,6 +400,40 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.show', $invoice)->with('status', $message);
     }
 
+    public function cancel(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('cancel', $invoice);
+        $this->releaseSources($invoice->items);
+        $invoice->update(['status' => 'void']);
+        AuditLog::record('invoice.cancelled', $invoice);
+        $this->tellClient($invoice, 'invoice', 'Invoice '.$invoice->number.' was cancelled', null, route('portal.invoices'));
+
+        return back()->with('status', 'Invoice cancelled. Time and milestones on it are available again.');
+    }
+
+    public function refund(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('refund', $invoice);
+        abort_unless($invoice->status === 'paid', 422, 'Only a paid invoice can be marked as refunded.');
+        $invoice->update(['status' => 'refunded']);
+        AuditLog::record('invoice.refunded', $invoice);
+        $this->tellClient($invoice, 'payment', 'Invoice '.$invoice->number.' was refunded', money($invoice->amount_paid_minor, $invoice->currency), route('portal.invoice', $invoice));
+
+        return back()->with('status', 'Marked as refunded. Workora records it; the money itself moves outside the app.');
+    }
+
+    /** A receipt for one payment. Clients may open their own. */
+    public function receipt(Invoice $invoice, Payment $payment, InvoicePdf $pdf): Response
+    {
+        $this->authorize('view', $invoice);
+        abort_unless($payment->invoice_id === $invoice->id && $payment->status === 'paid', 404);
+
+        $invoice->load('freelancer.freelancerProfile', 'organization', 'client');
+        $html = view('invoices.receipt', ['invoice' => $invoice, 'payment' => $payment, 'd' => $this->documents->build($invoice)])->render();
+
+        return response($pdf->fromHtml($html), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="receipt-'.$invoice->number.'.pdf"']);
+    }
+
     public function approve(Request $request, Invoice $invoice): RedirectResponse
     {
         $this->authorize('approve', $invoice);
@@ -476,29 +511,7 @@ class InvoiceController extends Controller
 
     private function applyPayment(Request $request, Invoice $invoice, int $amount, array $data): void
     {
-        DB::transaction(function () use ($request, $invoice, $data, $amount) {
-            // Lock the row so two people recording the same payment cannot both succeed.
-            $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
-            abort_if($amount <= 0 || $amount > $invoice->outstandingMinor(), 422, 'Nothing is owed on this invoice.');
-
-            Payment::create([
-                'invoice_id' => $invoice->id,
-                'user_id' => $invoice->user_id,
-                'amount_minor' => $amount,
-                'currency' => $invoice->currency,
-                'method' => $data['method'],
-                'status' => 'paid',
-                'paid_at' => $data['paid_on'],
-                'reference' => $data['reference'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'recorded_by' => $request->user()->id,
-            ]);
-
-            $paid = $invoice->amount_paid_minor + $amount;
-            $invoice->update(['amount_paid_minor' => $paid, 'status' => $paid >= $invoice->total_minor ? 'paid' : 'partially_paid']);
-            AuditLog::record('payment.recorded', $invoice, ['new' => ['amount_minor' => $amount]]);
-            $this->tellClient($invoice, 'payment', 'Payment received for '.$invoice->number, money($amount, $invoice->currency), route('portal.invoice', $invoice));
-        });
+        app(\App\Services\InvoicePayments::class)->record($invoice, $amount, $data, $request->user());
     }
 
     private function emailCopy(Invoice $invoice, string $to, InvoicePdf $pdf): string

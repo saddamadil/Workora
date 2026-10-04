@@ -10,7 +10,7 @@
     ];
     $t = $themes[$d['template']] ?? $themes['professional'];
     $isMinimal = $d['template'] === 'minimal';
-    $statusLabel = ['paid' => 'PAID', 'overdue' => 'OVERDUE', 'draft' => 'DRAFT', 'rejected' => 'DRAFT'][$d['status']] ?? null;
+    $statusLabel = ['paid' => 'PAID', 'overdue' => 'OVERDUE', 'draft' => 'DRAFT', 'rejected' => 'DRAFT', 'void' => 'CANCELLED', 'refunded' => 'REFUNDED'][$d['status']] ?? null;
     $meta = array_filter([
         'Service period' => $d['period'],
         'Payment terms' => $d['payment_terms'],

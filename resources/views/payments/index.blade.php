@@ -1,16 +1,17 @@
 @extends('layouts.app')
-@section('title', $mine ? 'Earnings' : 'Payments')
+@php $received = $mine || $org->mode === 'solo'; @endphp
+@section('title', $received ? 'Payments' : 'Payments')
 @section('content')
-<x-page-title :title="$mine ? 'Earnings' : 'Payments'" :sub="$mine ? 'What you are owed and what you have been paid.' : 'What you owe your freelancers and what you have paid.'" />
+<x-page-title :title="$mine ? 'Earnings' : 'Payments'" :sub="$received ? 'What you are owed, what you have received and when.' : 'What you owe your freelancers and what you have paid.'" />
 <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <x-stat :label="$mine ? 'Owed to you' : 'Still to pay'" :value="money($owedMinor, $org->base_currency)" icon="bi-wallet2" tone="amber" />
+    <x-stat :label="$received ? 'Outstanding' : 'Still to pay'" :value="money($owedMinor, $org->base_currency)" icon="bi-wallet2" tone="amber" />
     <x-stat label="Overdue" :value="money($overdueMinor, $org->base_currency)" icon="bi-exclamation-triangle" :tone="$overdueMinor ? 'red' : 'slate'" />
     <x-stat label="Paid this month" :value="money($paidMonthMinor, $org->base_currency)" icon="bi-cash-coin" tone="green" />
-    <x-stat label="Paid all time" :value="money($paidTotalMinor, $org->base_currency)" icon="bi-bank" tone="slate" />
+    <x-stat :label="$received ? 'Total received' : 'Paid all time'" :value="money($paidTotalMinor, $org->base_currency)" icon="bi-bank" tone="slate" :hint="$lastPayment ? 'Last payment '.$lastPayment->paid_at?->format('d M') : null" />
 </div>
 
 <div class="card mb-6">
-    <div class="border-b border-slate-100 px-5 py-3"><h2 class="font-semibold text-slate-900">{{ $mine ? 'Waiting to be paid' : 'Approved invoices to pay' }}</h2></div>
+    <div class="border-b border-slate-100 px-5 py-3"><h2 class="font-semibold text-slate-900">{{ $received ? 'Waiting to be paid' : 'Approved invoices to pay' }}</h2></div>
     @if ($owed->isEmpty())<p class="px-5 py-8 text-center text-sm text-slate-500">Nothing outstanding.</p>
     @else
         <ul class="divide-y divide-slate-100">

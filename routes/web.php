@@ -18,6 +18,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationSwitchController;
+use App\Http\Controllers\PaymentReportController;
 use App\Http\Controllers\PaymentProfileController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PortalController;
@@ -79,6 +80,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
         Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
+        Route::post('/invoices/{invoice}/paid', [PaymentReportController::class, 'store'])->name('invoices.paid');
         Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
         Route::post('/profile', [PortalController::class, 'updateProfile'])->name('profile.update');
 
@@ -214,6 +216,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/invoices/{invoice}/approve', [InvoiceController::class, 'approve'])->name('invoices.approve');
     Route::post('/invoices/{invoice}/reject', [InvoiceController::class, 'reject'])->name('invoices.reject');
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('invoices.payments.store');
+    Route::get('/invoices/{invoice}/receipt/{payment}', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
+    Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
+    Route::post('/invoices/{invoice}/refund', [InvoiceController::class, 'refund'])->name('invoices.refund');
+    Route::post('/payment-reports/{report}/confirm', [PaymentReportController::class, 'confirm'])->name('payment-reports.confirm');
+    Route::post('/payment-reports/{report}/reject', [PaymentReportController::class, 'reject'])->name('payment-reports.reject');
     Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
 

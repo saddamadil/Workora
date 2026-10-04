@@ -1,8 +1,9 @@
 @php
-    $isFreelancer = $role?->isFreelancer() ?? false;
+    $solo = ($org?->mode ?? 'team') === 'solo';
+    $isFreelancer = ($role?->isFreelancer() ?? false) || $solo;
     $tabs = [
         ['overview', 'team.index', 'Overview', 'bi-speedometer2', ! $isFreelancer],
-        ['members', 'team.members', $isFreelancer ? 'Company' : 'Members', 'bi-people', true],
+        ['members', 'team.members', $isFreelancer ? 'Company' : 'Members', 'bi-people', ! $solo],
         ['invitations', 'team.invitations', 'Invitations', 'bi-envelope-open', ! $isFreelancer],
         ['roles', 'team.roles', 'Roles & permissions', 'bi-shield-check', ! $isFreelancer],
         ['payments', 'team.payment-profiles', 'Payment profiles', 'bi-bank', $isFreelancer || Gate::allows('pay') || Gate::allows('manage-team')],

@@ -22,9 +22,11 @@ class PaymentController extends Controller
             ->when($mine, fn ($q) => $q->where('user_id', $request->user()->id))
             ->where('status', 'paid')->latest('paid_at')->paginate(25);
 
+        // On a solo workspace a sent invoice is already payable; there is no approval step first.
+        $payable = $tenancy->isSolo() ? ['submitted', 'under_review', 'approved', 'partially_paid'] : ['approved', 'partially_paid'];
         $owed = Invoice::query()->with('freelancer:id,name')
             ->when($mine, fn ($q) => $q->where('user_id', $request->user()->id))
-            ->whereIn('status', ['approved', 'partially_paid'])->orderBy('due_date')->get();
+            ->whereIn('status', $payable)->orderBy('due_date')->get();
 
         $paidQuery = fn () => Payment::query()->when($mine, fn ($q) => $q->where('user_id', $request->user()->id))->where('status', 'paid');
 
@@ -36,6 +38,7 @@ class PaymentController extends Controller
             'paidMonthMinor' => (int) $paidQuery()->where('paid_at', '>=', $monthStart)->sum('amount_minor'),
             'paidTotalMinor' => (int) $paidQuery()->sum('amount_minor'),
             'mine' => $mine,
+            'lastPayment' => $payments->first(),
         ]);
     }
 }

@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 class SetCurrentOrganization
 {
     /** Route names a client login may use. */
-    public const CLIENT_ROUTES = ['portal.*', 'notifications.*', 'invoices.preview', 'invoices.print', 'invoices.pdf', 'assets.*', 'organizations.switch'];
+    public const CLIENT_ROUTES = ['portal.*', 'notifications.*', 'invoices.preview', 'invoices.print', 'invoices.pdf', 'invoices.receipt', 'assets.*', 'organizations.switch'];
 
     public function __construct(private Tenancy $tenancy) {}
 

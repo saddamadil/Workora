@@ -3,8 +3,8 @@
 @section('content')
 @php
     $ds = $invoice->displayStatus();
-    $tone = ['draft' => 'slate', 'sent' => 'amber', 'paid' => 'green', 'overdue' => 'red', 'rejected' => 'orange', 'void' => 'slate'];
-    $label = ['draft' => 'Draft', 'sent' => 'Sent', 'paid' => 'Paid', 'overdue' => 'Overdue', 'rejected' => 'Sent back', 'void' => 'Void'];
+    $tone = ['draft' => 'slate', 'sent' => 'amber', 'paid' => 'green', 'overdue' => 'red', 'rejected' => 'orange', 'void' => 'slate', 'partial' => 'blue', 'refunded' => 'slate'];
+    $label = ['draft' => 'Draft', 'sent' => 'Sent', 'paid' => 'Paid', 'overdue' => 'Overdue', 'rejected' => 'Sent back', 'void' => 'Cancelled', 'partial' => 'Partially paid', 'refunded' => 'Refunded'];
     $cur = $invoice->currency;
 @endphp
 <div class="mb-2 text-sm"><a href="{{ route('invoices.index') }}" class="text-brand-600 hover:underline"><i class="bi bi-arrow-left"></i> Invoices</a></div>
@@ -23,12 +23,24 @@
 <div class="space-y-6 lg:col-span-2">
     <div class="card overflow-hidden"><iframe title="Invoice" src="{{ route('invoices.preview', $invoice) }}" class="h-[1100px] w-full bg-white"></iframe></div>
 
+    @if ($reports->where('status', 'pending')->isNotEmpty())
+        <div class="card border-amber-300">
+            <div class="border-b border-slate-100 px-5 py-3"><h2 class="font-semibold text-slate-900"><i class="bi bi-hourglass-split text-amber-500"></i> Client says they paid</h2></div>
+            @foreach ($reports->where('status', 'pending') as $r)
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 text-sm last:border-0">
+                    <span class="text-slate-800">{{ money($r->amount_minor, $invoice->currency) }} by {{ ucfirst(str_replace('_', ' ', $r->method)) }} on {{ $r->paid_on->format('d M') }} · ref <strong>{{ $r->reference }}</strong><span class="text-slate-500"> · {{ $r->reportedBy->name }}</span></span>
+                    @can('recordPayment', $invoice)<span class="flex gap-2"><form method="POST" action="{{ route('payment-reports.confirm', $r) }}">@csrf<button class="btn-primary btn-sm">Confirm received</button></form><form method="POST" action="{{ route('payment-reports.reject', $r) }}">@csrf<button class="btn-secondary btn-sm">Not received</button></form></span>@endcan
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     @if ($invoice->payments->isNotEmpty())
         <div class="card">
             <div class="border-b border-slate-100 px-5 py-3"><h2 class="font-semibold text-slate-900">Payments</h2></div>
             <ul class="divide-y divide-slate-100 text-sm">
                 @foreach ($invoice->payments as $p)
-                    <li class="flex flex-wrap items-center justify-between gap-2 px-5 py-3"><span class="text-slate-700">{{ $p->paid_at?->format('d M Y') }} · {{ ucfirst(str_replace('_', ' ', $p->method)) }}@if ($p->reference) · {{ $p->reference }}@endif</span><span class="font-semibold text-emerald-700">{{ money($p->amount_minor, $p->currency) }}</span></li>
+                    <li class="flex flex-wrap items-center justify-between gap-2 px-5 py-3"><span class="text-slate-700">{{ $p->paid_at?->format('d M Y') }} · {{ ucfirst(str_replace('_', ' ', $p->method)) }}@if ($p->reference) · {{ $p->reference }}@endif</span><span class="flex items-center gap-3"><a href="{{ route('invoices.receipt', [$invoice, $p]) }}" class="text-xs text-brand-600 hover:underline">Receipt</a><span class="font-semibold text-emerald-700">{{ money($p->amount_minor, $p->currency) }}</span></span></li>
                 @endforeach
             </ul>
         </div>
@@ -67,6 +79,9 @@
             @foreach ($payout['lines'] as $row)<div class="flex justify-between gap-3 py-0.5"><span class="text-slate-500">{{ $row[0] }}</span><span class="font-medium text-slate-900">{{ $row[1] }}</span></div>@endforeach
         </div>
     @endif
+
+    @can('cancel', $invoice)<form method="POST" action="{{ route('invoices.cancel', $invoice) }}" onsubmit="return confirm('Cancel this invoice? The client will be told.')">@csrf<button class="btn-secondary w-full text-red-600"><i class="bi bi-x-circle"></i> Cancel invoice</button></form>@endcan
+    @can('refund', $invoice)@if ($invoice->status === 'paid')<form method="POST" action="{{ route('invoices.refund', $invoice) }}" onsubmit="return confirm('Mark this invoice as refunded?')">@csrf<button class="btn-secondary w-full"><i class="bi bi-arrow-counterclockwise"></i> Mark as refunded</button></form>@endif @endcan
 
     <div class="card divide-y divide-slate-100 text-sm">
         <div class="flex justify-between px-5 py-3"><span class="text-slate-500">Total</span><span class="font-semibold text-slate-900">{{ money($invoice->total_minor, $cur) }}</span></div>

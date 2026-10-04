@@ -52,6 +52,7 @@
             ['calendar.index', 'bi-calendar3', 'Calendar', 'calendar', true],
             [null, 'bi-bar-chart', 'Reports', '', true],
             ['profile.edit', 'bi-person-circle', 'Profile', 'profile', true],
+            ['team.payment-profiles', 'bi-bank', 'Payment profiles', 'team', true],
             ['settings.company', 'bi-gear', 'Settings', 'settings', Gate::allows('manage-team')],
             [null, 'bi-life-preserver', 'Help', '', true],
         ]];

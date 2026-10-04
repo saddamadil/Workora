@@ -109,7 +109,7 @@ class Invoice extends Model
     public function isOverdue(): bool
     {
         return $this->due_date->isPast()
-            && ! in_array($this->status, ['paid', 'void'], true);
+            && ! in_array($this->status, ['paid', 'void', 'refunded', 'draft', 'rejected'], true);
     }
 
     public function outstandingMinor(): int
@@ -169,6 +169,14 @@ class Invoice extends Model
 
         if ($this->status === 'void') {
             return 'void';
+        }
+
+        if ($this->status === 'refunded') {
+            return 'refunded';
+        }
+
+        if ($this->status === 'partially_paid' && ! $this->isOverdue()) {
+            return 'partial';
         }
 
         return $this->isOverdue() && in_array($this->status, ['approved', 'partially_paid', 'submitted', 'under_review'], true) ? 'overdue' : 'sent';

@@ -2,8 +2,8 @@
 @section('title', 'Invoices')
 @section('content')
 @php
-    $tone = ['draft' => 'slate', 'sent' => 'amber', 'paid' => 'green', 'overdue' => 'red', 'rejected' => 'orange', 'void' => 'slate'];
-    $label = ['draft' => 'Draft', 'sent' => 'Sent', 'paid' => 'Paid', 'overdue' => 'Overdue', 'rejected' => 'Sent back', 'void' => 'Void'];
+    $tone = ['draft' => 'slate', 'sent' => 'amber', 'paid' => 'green', 'overdue' => 'red', 'rejected' => 'orange', 'void' => 'slate', 'partial' => 'blue', 'refunded' => 'slate'];
+    $label = ['draft' => 'Draft', 'sent' => 'Sent', 'paid' => 'Paid', 'overdue' => 'Overdue', 'rejected' => 'Sent back', 'void' => 'Cancelled', 'partial' => 'Partially paid', 'refunded' => 'Refunded'];
     $base = $inTeam ? 'team.invoices' : 'invoices.index';
 @endphp
 <x-page-title title="{{ $inTeam ? 'Team' : 'Invoices' }}" :sub="$inTeam ? 'Your people, how they are paid and what they have invoiced.' : ($role->isFreelancer() ? 'Create, send and track your invoices.' : 'Invoices from your freelancers.')">

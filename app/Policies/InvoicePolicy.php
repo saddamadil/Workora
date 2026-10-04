@@ -38,7 +38,7 @@ class InvoicePolicy
 
             return $clientId !== null
                 && $invoice->client_id === $clientId
-                && in_array($invoice->status, ['submitted', 'under_review', 'approved', 'partially_paid', 'paid'], true);
+                && in_array($invoice->status, ['submitted', 'under_review', 'approved', 'partially_paid', 'paid', 'void', 'refunded'], true);
         }
 
         if ($role->isFreelancer()) {
@@ -110,6 +110,18 @@ class InvoicePolicy
         return $role !== null
             && $role->canApprovePayment()
             && in_array($invoice->status, $this->tenancy->isSolo() ? ['submitted', 'approved', 'partially_paid'] : ['approved', 'partially_paid'], true);
+    }
+
+    /** Cancel an invoice that was sent but has not been paid at all. */
+    public function cancel(User $user, Invoice $invoice): bool
+    {
+        return $this->owns($user, $invoice) && in_array($invoice->status, ['submitted', 'under_review', 'approved'], true) && $invoice->amount_paid_minor === 0;
+    }
+
+    /** Mark a paid invoice as refunded. Whoever may record payments may do this. */
+    public function refund(User $user, Invoice $invoice): bool
+    {
+        return $this->recordPayment($user, $invoice) || ($invoice->status === 'paid' && ($this->tenancy->role()?->canApprovePayment() ?? false));
     }
 
     public function delete(User $user, Invoice $invoice): bool

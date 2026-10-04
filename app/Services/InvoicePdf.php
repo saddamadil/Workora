@@ -13,8 +13,11 @@ class InvoicePdf
 
     public function render(Invoice $invoice): string
     {
-        $html = view('invoices.document', ['d' => $this->documents->build($invoice), 'pdf' => true])->render();
+        return $this->fromHtml(view('invoices.document', ['d' => $this->documents->build($invoice), 'pdf' => true])->render());
+    }
 
+    public function fromHtml(string $html): string
+    {
         // Fonts and the render cache need a folder PHP can write to; storage/ always is.
         $dir = storage_path('app/dompdf');
         File::ensureDirectoryExists($dir);

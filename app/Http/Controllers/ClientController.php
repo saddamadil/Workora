@@ -71,7 +71,7 @@ class ClientController extends Controller
             'tasks as tasks_done' => fn ($q) => $q->where('status', 'approved'),
         ])->latest()->get();
         $invoices = $money ? Invoice::query()->with('freelancer:id,name')->where('client_id', $client->id)->latest('issue_date')->get() : collect();
-        $sent = $invoices->whereNotIn('status', ['draft', 'rejected', 'void']);
+        $sent = $invoices->whereNotIn('status', ['draft', 'rejected', 'void', 'refunded']);
 
         return view('clients.show', [
             'client' => $client,

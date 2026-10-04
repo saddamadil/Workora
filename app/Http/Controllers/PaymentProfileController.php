@@ -25,7 +25,7 @@ class PaymentProfileController extends Controller
 
     public function index(Request $request): View
     {
-        $isFreelancer = $this->tenancy->isFreelancer();
+        $isFreelancer = $this->tenancy->issuesOwnInvoices();
         abort_unless($isFreelancer || Gate::allows('pay') || Gate::allows('manage-team'), 403);
 
         $mine = $isFreelancer ? PayoutMethod::where('user_id', $request->user()->id)->orderByDesc('is_default')->orderBy('kind')->get() : collect();
@@ -45,7 +45,7 @@ class PaymentProfileController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($this->tenancy->isFreelancer(), 403);
+        abort_unless($this->tenancy->issuesOwnInvoices(), 403);
 
         [$attrs, $details] = $this->validated($request);
         $profile = PayoutMethod::create($attrs + ['user_id' => $request->user()->id, 'details_encrypted' => $details]);
@@ -88,7 +88,7 @@ class PaymentProfileController extends Controller
 
     private function ownOrFail(Request $request, PayoutMethod $profile): void
     {
-        abort_unless($this->tenancy->isFreelancer() && $profile->user_id === $request->user()->id, 403);
+        abort_unless($this->tenancy->issuesOwnInvoices() && $profile->user_id === $request->user()->id, 403);
     }
 
     /** @return array{0: array, 1: array<string, string>} model attributes, encrypted details */
