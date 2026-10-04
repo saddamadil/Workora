@@ -15,3 +15,5 @@
         <button type="button" @click="show = false" class="text-red-700/70 hover:text-red-900" aria-label="Dismiss"><i class="bi bi-x-lg"></i></button>
     </div>
 @endif
+
+@if ($errors->has('plan'))<div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">{{ $errors->first('plan') }} <a class="font-semibold underline" href="{{ route('settings.plan') }}">See your plan</a></div>@endif

@@ -15,7 +15,7 @@ class InvoiceItem extends Model
 
     protected $fillable = [
         'organization_id', 'invoice_id', 'description', 'quantity', 'unit',
-        'unit_rate_minor', 'amount_minor', 'source_type', 'source_id', 'position',
+        'unit_rate_minor', 'discount_percent', 'amount_minor', 'source_type', 'source_id', 'position',
     ];
 
     protected function casts(): array
@@ -24,6 +24,7 @@ class InvoiceItem extends Model
             'quantity' => 'decimal:2',
             'unit_rate_minor' => 'integer',
             'amount_minor' => 'integer',
+            'discount_percent' => 'float',
             'position' => 'integer',
         ];
     }
@@ -31,8 +32,15 @@ class InvoiceItem extends Model
     protected static function booted(): void
     {
         static::saving(function (self $item) {
-            $item->amount_minor = (int) round((float) $item->quantity * $item->unit_rate_minor);
+            $gross = (float) $item->quantity * $item->unit_rate_minor;
+            $item->amount_minor = (int) round($gross * (1 - min(100, max(0, (float) ($item->discount_percent ?? 0))) / 100));
         });
+    }
+
+    /** What the line would cost before its discount. */
+    public function grossMinor(): int
+    {
+        return (int) round((float) $this->quantity * $this->unit_rate_minor);
     }
 
     public function invoice(): BelongsTo

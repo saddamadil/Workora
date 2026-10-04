@@ -96,6 +96,7 @@ class ClientController extends Controller
     {
         $this->authorize('manage-clients');
         $data = $this->validated($request, $images);
+        app(\App\Services\PlanLimits::class)->ensureRoomFor('clients');
 
         // The same client twice splits their invoices and history in two, so stop it here.
         $existing = $this->findDuplicate($data['name'], $data['email'] ?? null);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\BillingSettingsController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
@@ -272,6 +273,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [ProfileController::class, 'password'])->name('profile.password');
+    Route::get('/settings/tax-profiles', [BillingSettingsController::class, 'taxProfiles'])->name('settings.tax-profiles');
+    Route::post('/settings/tax-profiles', [BillingSettingsController::class, 'storeTaxProfile'])->name('settings.tax-profiles.store');
+    Route::delete('/settings/tax-profiles/{profile}', [BillingSettingsController::class, 'destroyTaxProfile'])->name('settings.tax-profiles.destroy');
+    Route::get('/settings/exchange-rates', [BillingSettingsController::class, 'exchangeRates'])->name('settings.exchange-rates');
+    Route::post('/settings/exchange-rates', [BillingSettingsController::class, 'storeExchangeRate'])->name('settings.exchange-rates.store');
+    Route::delete('/settings/exchange-rates/{rate}', [BillingSettingsController::class, 'destroyExchangeRate'])->name('settings.exchange-rates.destroy');
+    Route::get('/settings/plan', [BillingSettingsController::class, 'plan'])->name('settings.plan');
+    Route::get('/admin/plans', [BillingSettingsController::class, 'adminPlans'])->name('admin.plans');
+    Route::post('/admin/organizations/{organization}/plan', [BillingSettingsController::class, 'setPlan'])->name('admin.plans.set');
     Route::get('/settings/company', [SettingsController::class, 'company'])->name('settings.company');
     Route::post('/settings/company', [SettingsController::class, 'updateCompany'])->name('settings.company.update');
 

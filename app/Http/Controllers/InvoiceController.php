@@ -198,6 +198,7 @@ class InvoiceController extends Controller
             'quantity' => ['required', 'numeric', 'gt:0', 'max:100000'],
             'unit' => ['required', Rule::in(['hours', 'items', 'fixed'])],
             'unit_rate' => ['required', 'numeric', 'min:0'],
+            'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $invoice->items()->create([
@@ -205,6 +206,7 @@ class InvoiceController extends Controller
             'quantity' => $data['quantity'],
             'unit' => $data['unit'],
             'unit_rate_minor' => Money::toMinor($data['unit_rate']),
+            'discount_percent' => (float) ($data['discount_percent'] ?? 0),
             'position' => $invoice->items()->count(),
         ]);
         $invoice->recalculate();
@@ -545,6 +547,8 @@ class InvoiceController extends Controller
             'contracts' => $issuer ? Contract::query()->where('user_id', $issuer->id)->where('status', 'active')->get() : collect(),
             'templates' => \App\Http\Controllers\SettingsController::TEMPLATES,
             'currencies' => array_keys(Money::CURRENCIES),
+            'taxProfiles' => \App\Models\TaxProfile::query()->orderByDesc('is_default')->orderBy('name')->get()->map(fn ($t) => $t->only(['id', 'name', 'applies_to', 'treatment', 'rate', 'label', 'place_of_supply', 'sac_code', 'lut_reference']))->all(),
+            'rates' => \App\Models\ExchangeRate::query()->where('to_currency', 'INR')->orderBy('effective_on')->get()->groupBy('from_currency')->map(fn ($g) => ['rate' => rtrim(rtrim(number_format($g->last()->rate, 6, '.', ''), '0'), '.'), 'on' => $g->last()->effective_on->format('d M Y')])->all(),
             'taxRate' => $invoice->exists ? TaxPlan::totalRate($invoice->tax_lines) : (float) ($invoice->tax_rate ?? 0),
             'taxLabel' => collect($invoice->tax_lines ?? [])->first()['label'] ?? '',
         ];

@@ -132,14 +132,14 @@
 
         {{-- Services --}}
         <table class="items">
-            <thead><tr><th>Description</th><th class="r" style="width: 60px">Qty</th><th class="r" style="width: 95px">Rate</th><th class="r" style="width: 105px">Amount</th></tr></thead>
+            <thead><tr><th>Description</th><th class="r" style="width: 60px">Qty</th><th class="r" style="width: 95px">Rate</th>@if ($d['has_discount'])<th class="r" style="width: 60px">Disc.</th>@endif<th class="r" style="width: 105px">Amount</th></tr></thead>
             <tbody>
                 @forelse ($d['items'] as $item)
                     <tr><td>{{ $item['description'] }}</td>
                         <td class="r">{{ $item['quantity'] }}@if ($item['unit'] === 'hours') h @endif</td>
-                        <td class="r">{{ $item['rate'] }}</td><td class="r"><strong>{{ $item['amount'] }}</strong></td></tr>
+                        <td class="r">{{ $item['rate'] }}</td>@if ($d['has_discount'])<td class="r">{{ $item['discount'] ?? '' }}</td>@endif<td class="r"><strong>{{ $item['amount'] }}</strong></td></tr>
                 @empty
-                    <tr><td colspan="4" class="muted" style="text-align:center; padding: 18px">No lines yet</td></tr>
+                    <tr><td colspan="{{ $d['has_discount'] ? 5 : 4 }}" class="muted" style="text-align:center; padding: 18px">No lines yet</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -153,6 +153,7 @@
             <td>
                 <table class="totals">
                     <tr><td class="muted">Subtotal</td><td class="r">{{ $d['subtotal'] }}</td></tr>
+                    @if ($d['has_discount'])<tr><td class="muted">Discount</td><td class="r">-{{ $d['discount_total'] }}</td></tr>@endif
                     @foreach ($d['tax_lines'] as $line)<tr><td class="muted">{{ $line['label'] }}</td><td class="r">{{ $line['amount'] }}</td></tr>@endforeach
                     <tr class="grand"><td>Total ({{ $d['currency'] }})</td><td class="r">{{ $d['total'] }}</td></tr>
                     @if (! empty($d['international']['inr_equivalent']))<tr><td class="muted small">INR equivalent</td><td class="r small">{{ $d['international']['inr_equivalent'] }}</td></tr>@endif

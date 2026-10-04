@@ -7,7 +7,8 @@
     }
 @endphp
 <form method="POST" action="{{ $invoice->exists ? route('invoices.update', $invoice) : route('invoices.store') }}" class="space-y-6"
-      x-data="{ type: '{{ $v('invoice_type', 'domestic') }}', billTo: '{{ $v('bill_to_type', 'company') }}', terms: '{{ $termsNow }}', treatment: '{{ $v('tax_treatment', 'none') }}' }">
+      x-data="{ type: '{{ $v('invoice_type', 'domestic') }}', billTo: '{{ $v('bill_to_type', 'company') }}', terms: '{{ $termsNow }}', treatment: '{{ $v('tax_treatment', 'none') }}', cur: '{{ $v('currency') }}', rates: @js($rates ?? []), profiles: @js($taxProfiles ?? []),
+          apply(id) { const p = this.profiles.find(x => x.id === id); if (!p) return; this.treatment = p.treatment; if (p.applies_to !== 'all') this.type = p.applies_to; this.$nextTick(() => { const set = (k, v) => { const e = document.getElementById(k); if (e) e.value = v ?? ''; }; set('tax_rate', p.rate || ''); set('tax_label', p.label); set('place_of_supply', p.place_of_supply); set('sac_code', p.sac_code); set('lut_reference', p.lut_reference); }); } }">
     @csrf @if ($invoice->exists) @method('PUT') @endif
 
     <div class="card space-y-5 p-5">
@@ -68,7 +69,7 @@
             </div>
             <div x-show="terms === 'custom'" x-cloak><label class="label" for="due_date">Due date</label><input id="due_date" type="date" name="due_date" value="{{ $dateVal('due_date') }}" class="input" :disabled="terms !== 'custom'"></div>
             <div><label class="label" for="currency">Currency</label>
-                <select id="currency" name="currency" class="input">@foreach ($currencies as $c)<option value="{{ $c }}" @selected($v('currency') === $c)>{{ $c }}</option>@endforeach</select></div>
+                <select id="currency" name="currency" x-model="cur" class="input">@foreach ($currencies as $c)<option value="{{ $c }}" @selected($v('currency') === $c)>{{ $c }}</option>@endforeach</select></div>
             <div class="sm:col-span-2">
                 <span class="label">Invoice type</span>
                 <div class="flex gap-2">
@@ -88,6 +89,10 @@
             <h2 class="font-semibold text-slate-900">Tax</h2>
             <p class="text-sm text-slate-500">Freelancy prints what you choose here. It does not decide which tax applies to you. Check with your accountant if unsure.</p>
         </div>
+        @if (! empty($taxProfiles))
+        <div><label class="label" for="tax_profile">Apply a saved tax profile</label>
+            <select id="tax_profile" class="input sm:max-w-sm" @change="apply($event.target.value)"><option value="">Choose…</option>@foreach ($taxProfiles as $tp)<option value="{{ $tp['id'] }}">{{ $tp['name'] }}</option>@endforeach</select></div>
+        @endif
         <div class="grid gap-4 sm:grid-cols-3">
             <div class="sm:col-span-2"><label class="label" for="tax_treatment">Tax treatment</label>
                 <select id="tax_treatment" name="tax_treatment" x-model="treatment" class="input">@foreach (\App\Models\Invoice::TREATMENTS as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select></div>
@@ -102,7 +107,8 @@
             <div x-show="treatment === 'export_lut'" x-cloak class="sm:col-span-2"><label class="label" for="lut_reference">LUT reference</label>
                 <input id="lut_reference" name="lut_reference" value="{{ $v('lut_reference') }}" class="input"></div>
             <div x-show="type === 'international'" x-cloak><label class="label" for="exchange_rate">Exchange rate to INR <span class="font-normal text-slate-400">(1 unit = ? INR)</span></label>
-                <input id="exchange_rate" type="number" step="0.000001" min="0" name="exchange_rate" value="{{ $v('exchange_rate') }}" class="input" :disabled="type !== 'international'"></div>
+                <input id="exchange_rate" type="number" step="0.000001" min="0" name="exchange_rate" value="{{ $v('exchange_rate') }}" class="input" :disabled="type !== 'international'">
+                <p class="mt-1 text-xs text-slate-500" x-show="rates[cur]" x-cloak>Your saved rate: <button type="button" class="font-semibold text-brand-700 underline" @click="document.getElementById('exchange_rate').value = rates[cur].rate" x-text="rates[cur] ? rates[cur].rate + ' (from ' + rates[cur].on + ')' : ''"></button> · <a class="underline" href="{{ route('settings.exchange-rates') }}">edit rates</a></p></div>
         </div>
     </div>
 

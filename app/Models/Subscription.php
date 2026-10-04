@@ -13,7 +13,7 @@ class Subscription extends Model
     use BelongsToOrganization, HasFactory, HasUuids;
 
     protected $fillable = [
-        'plan_id', 'status', 'trial_ends_at', 'starts_at', 'ends_at',
+        'organization_id', 'plan_id', 'status', 'trial_ends_at', 'starts_at', 'ends_at',
         'processor', 'processor_reference',
     ];
 

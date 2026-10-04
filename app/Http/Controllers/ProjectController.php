@@ -56,6 +56,7 @@ class ProjectController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', Project::class);
+        app(\App\Services\PlanLimits::class)->ensureRoomFor('projects');
 
         $data = $this->validated($request);
         $project = Project::create($data + [

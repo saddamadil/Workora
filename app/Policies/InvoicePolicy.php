@@ -45,6 +45,11 @@ class InvoicePolicy
             return $invoice->user_id === $user->id;
         }
 
+        // On a solo workspace the owner is the issuer: their own drafts are theirs to see.
+        if ($this->tenancy->issuesOwnInvoices() && $invoice->user_id === $user->id) {
+            return true;
+        }
+
         // Someone else's draft is private until it is sent, unless this person prepared it.
         if ($invoice->status === 'draft' && $invoice->prepared_by !== $user->id) {
             return false;

@@ -14,5 +14,8 @@ return [
         'php', 'phtml', 'phar', 'exe', 'msi', 'bat', 'cmd', 'com', 'scr', 'sh', 'js', 'jar', 'vbs', 'ps1', 'dll',
     ],
 
+    // The one person who can change workspaces' plans. Set PLATFORM_ADMIN_EMAIL in .env.
+    'platform_admin_email' => env('PLATFORM_ADMIN_EMAIL'),
+
     'folders' => ['Documents', 'Images', 'Designs', 'Deliverables', 'Contracts', 'Other'],
 ];

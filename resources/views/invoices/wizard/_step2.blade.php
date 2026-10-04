@@ -3,20 +3,21 @@
 <div class="space-y-6 lg:col-span-2">
     <div class="card overflow-x-auto">
         <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-5 py-3">Description</th><th class="px-3 py-3 text-right">Qty</th><th class="px-3 py-3 text-right">Rate</th><th class="px-5 py-3 text-right">Amount</th><th></th></tr></thead>
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-5 py-3">Description</th><th class="px-3 py-3 text-right">Qty</th><th class="px-3 py-3 text-right">Rate</th><th class="px-3 py-3 text-right">Disc.</th><th class="px-5 py-3 text-right">Amount</th><th></th></tr></thead>
             <tbody class="divide-y divide-slate-100">
                 @forelse ($invoice->items as $item)
                     <tr><td class="px-5 py-2.5 text-slate-800">{{ $item->description }}</td>
                         <td class="whitespace-nowrap px-3 py-2.5 text-right text-slate-600">{{ rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.') }} {{ $item->unit === 'hours' ? 'h' : '' }}</td>
                         <td class="whitespace-nowrap px-3 py-2.5 text-right text-slate-600">{{ money($item->unit_rate_minor, $cur) }}</td>
+                        <td class="whitespace-nowrap px-3 py-2.5 text-right text-slate-600">{{ (float) $item->discount_percent > 0 ? rtrim(rtrim(number_format((float) $item->discount_percent, 2), '0'), '.').'%' : '' }}</td>
                         <td class="whitespace-nowrap px-5 py-2.5 text-right font-medium text-slate-900">{{ money($item->amount_minor, $cur) }}</td>
                         <td class="pr-4"><form method="POST" action="{{ route('invoices.items.remove', [$invoice, $item]) }}">@csrf @method('DELETE')<button class="text-slate-300 hover:text-red-600" aria-label="Remove line"><i class="bi bi-x-lg"></i></button></form></td></tr>
-                @empty<tr><td colspan="5" class="px-5 py-8 text-center text-slate-500">No lines yet. Add one below or import approved work.</td></tr>@endforelse
+                @empty<tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">No lines yet. Add one below or import approved work.</td></tr>@endforelse
             </tbody>
             <tfoot class="text-sm">
-                <tr class="border-t border-slate-200"><td colspan="3" class="px-5 py-2 text-right text-slate-500">Subtotal</td><td class="px-5 py-2 text-right text-slate-800">{{ money($invoice->subtotal_minor, $cur) }}</td><td></td></tr>
-                @foreach ($invoice->taxBreakdown() as $t)<tr><td colspan="3" class="px-5 py-2 text-right text-slate-500">{{ $t['label'] }} ({{ rtrim(rtrim(number_format((float) $t['rate'], 2), '0'), '.') }}%)</td><td class="px-5 py-2 text-right text-slate-800">{{ money($t['amount_minor'], $cur) }}</td><td></td></tr>@endforeach
-                <tr><td colspan="3" class="px-5 py-2 text-right font-semibold text-slate-900">Total</td><td class="px-5 py-2 text-right text-lg font-bold text-slate-900">{{ money($invoice->total_minor, $cur) }}</td><td></td></tr>
+                <tr class="border-t border-slate-200"><td colspan="4" class="px-5 py-2 text-right text-slate-500">Subtotal</td><td class="px-5 py-2 text-right text-slate-800">{{ money($invoice->subtotal_minor, $cur) }}</td><td></td></tr>
+                @foreach ($invoice->taxBreakdown() as $t)<tr><td colspan="4" class="px-5 py-2 text-right text-slate-500">{{ $t['label'] }} ({{ rtrim(rtrim(number_format((float) $t['rate'], 2), '0'), '.') }}%)</td><td class="px-5 py-2 text-right text-slate-800">{{ money($t['amount_minor'], $cur) }}</td><td></td></tr>@endforeach
+                <tr><td colspan="4" class="px-5 py-2 text-right font-semibold text-slate-900">Total</td><td class="px-5 py-2 text-right text-lg font-bold text-slate-900">{{ money($invoice->total_minor, $cur) }}</td><td></td></tr>
             </tfoot>
         </table>
     </div>
@@ -35,7 +36,8 @@
             <input name="description" required placeholder="Service, e.g. Website design" class="input sm:col-span-5" aria-label="Description">
             <input name="quantity" type="number" step="0.01" min="0.01" value="1" required class="input sm:col-span-2" aria-label="Quantity">
             <select name="unit" class="input sm:col-span-2" aria-label="Unit"><option value="items">items</option><option value="hours">hours</option><option value="fixed">fixed</option></select>
-            <input name="unit_rate" type="number" step="0.01" min="0" required placeholder="Rate" class="input sm:col-span-2" aria-label="Rate">
+            <input name="unit_rate" type="number" step="0.01" min="0" required placeholder="Rate" class="input sm:col-span-1" aria-label="Rate">
+            <input name="discount_percent" type="number" step="0.01" min="0" max="100" placeholder="Disc. %" class="input sm:col-span-1" aria-label="Discount percent">
             <button class="btn-secondary sm:col-span-1" aria-label="Add line"><i class="bi bi-plus-lg"></i></button>
         </form>
         @if ($errors->any())<div class="text-sm text-red-700">@foreach ($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>@endif

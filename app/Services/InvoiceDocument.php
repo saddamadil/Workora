@@ -40,6 +40,7 @@ class InvoiceDocument
             'quantity' => rtrim(rtrim(number_format((float) $i->quantity, 2, '.', ''), '0'), '.'),
             'unit' => $i->unit,
             'rate' => money($i->unit_rate_minor, $cur),
+            'discount' => (float) $i->discount_percent > 0 ? rtrim(rtrim(number_format((float) $i->discount_percent, 2, '.', ''), '0'), '.').'%' : null,
             'amount' => money($i->amount_minor, $cur),
         ])->all();
 
@@ -62,7 +63,10 @@ class InvoiceDocument
             'from' => $parties['from'],
             'bill_to' => $parties['bill_to'],
             'items' => $items,
-            'subtotal' => money($invoice->subtotal_minor, $cur),
+            // With discounts the subtotal is shown before them, then the discount, so the sum is visible.
+            'has_discount' => $invoice->items->contains(fn ($i) => (float) $i->discount_percent > 0),
+            'subtotal' => money($invoice->items->contains(fn ($i) => (float) $i->discount_percent > 0) ? $invoice->items->sum(fn ($i) => $i->grossMinor()) : $invoice->subtotal_minor, $cur),
+            'discount_total' => money($invoice->items->sum(fn ($i) => $i->grossMinor() - $i->amount_minor), $cur),
             'tax_lines' => collect($invoice->taxBreakdown())->map(fn ($l) => [
                 'label' => $l['label'].' @ '.rtrim(rtrim(number_format((float) $l['rate'], 2, '.', ''), '0'), '.').'%',
                 'amount' => money($l['amount_minor'], $cur),

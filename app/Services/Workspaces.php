@@ -18,6 +18,11 @@ class Workspaces
             'mode' => $mode,
         ]);
 
+        $free = \App\Models\Plan::query()->where('slug', 'free')->first();
+        if ($free) {
+            \App\Models\Subscription::withoutGlobalScopes()->create(['organization_id' => $organization->id, 'plan_id' => $free->id, 'status' => 'active', 'starts_at' => now()]);
+        }
+
         OrganizationMember::withoutGlobalScopes()->create([
             'organization_id' => $organization->id,
             'user_id' => $user->id,
