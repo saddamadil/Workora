@@ -16,6 +16,8 @@
         ['How do invoices get paid?', 'Add a payment profile (bank, UPI, IBAN or a payment link). Clients pay outside Freelancy and tell you with a reference. You confirm it and the payment is recorded. Freelancy records payments; it does not move money.'],
         ['How do reminders work?', 'A daily job sends due-soon and overdue reminders. On Hostinger, add a Cron Job running every minute: php /home/YOUR_USER/domains/YOUR_DOMAIN/workora/artisan schedule:run'],
         ['Is the tax on invoices checked?', 'No. Freelancy prints the tax settings you choose and warns about missing details. It does not decide which tax applies to you. Ask your accountant.'],
+        ['What can a client sign or accept?', 'A quote (accepting it creates the project) and an agreement (signed by typing their name; the time, address and a text fingerprint are recorded). Only the account owner can accept or sign; colleagues can read. A typed signature is a simple electronic signature, so ask a professional about important contracts.'],
+        ['How do recurring invoices work?', 'Open an invoice and choose Make recurring. A new draft is made on each date (or sent automatically if you choose that). It needs the daily job described above. Time and milestone lines are not repeated.'],
         ['Keyboard shortcuts', 'Press N to create something new, and Ctrl or Cmd + K to search.'],
     ] as [$q, $a])
         <details class="card group p-5"><summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 font-semibold text-slate-900">{{ $q }}<i class="bi bi-chevron-down text-slate-400 transition group-open:rotate-180"></i></summary><p class="mt-2 text-sm text-slate-700">{{ $a }}</p></details>

@@ -128,8 +128,17 @@ scripts/                build-deploy.sh (upload package), export-schema.sh (MySQ
 - Set `MAIL_MAILER` and the SMTP settings in `.env` or invitations, reset links and email
   notifications are only written to the log.
 
+## Server settings for the newer features
+
+- `PLATFORM_ADMIN_EMAIL`: the one sign-in that can change workspace plans at `/admin/plans`.
+- `INBOUND_MAIL_DOMAIN` and `INBOUND_MAIL_SECRET`: reply-by-email. Point an inbound email service
+  (Mailgun, Postmark or SendGrid) at `POST /inbound/email?secret=...`. Without them, emails simply have no reply address.
+- The same every-minute cron runs recurring invoices (daily 06:30) and reminders (daily 08:00).
+- Languages: `lang/{de,hi,ar,tr}/phrases.json` map whole English phrases to translations. Run
+  `scripts/extract-phrases.py` to list phrases and add missing ones. Translations are machine-quality: have a native speaker review them.
+- Online payment gateways are not included: clients pay outside Freelancy and report the payment.
+
 ## Not built yet
 
-Email notifications beyond the invitation, an in-app notification list, recurring invoices, expenses,
-disputes and escrow, and a public API. See
+Payment gateways, disputes and escrow, and a public API. See
 `docs/MVP-SCOPE.md` for the reasoning behind what was left out.
