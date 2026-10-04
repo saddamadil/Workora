@@ -7,7 +7,7 @@
     @if (session('duplicate'))
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
             <strong>This client already exists.</strong> {{ session('duplicate')['name'] }} is already in your workspace.
-            <a href="{{ route('clients.show', session('duplicate')['id']) }}" class="ml-1 font-semibold underline">Open existing client</a>
+            <a href="{{ route('clients.show', session('duplicate')['id']) }}" class="ms-1 font-semibold underline">Open existing client</a>
         </div>
     @endif
     <div x-data="{ type: '{{ old('type', $client->type ?: 'company') }}' }" class="flex flex-wrap items-center gap-4">

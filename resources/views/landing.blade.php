@@ -11,7 +11,7 @@
     </div>
     <p class="mt-3 text-sm text-slate-500">Already have an account? <a href="{{ route('login') }}" class="font-semibold text-brand-600 hover:underline">Sign in</a></p>
 
-    <div class="mt-12 grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-3">
+    <div class="mt-12 grid gap-3 text-start sm:grid-cols-2 lg:grid-cols-3">
         @foreach ([
             ['bi-kanban', 'Projects and tasks', 'Assign work, follow it on a board, review what is handed in and send it back with a checklist of changes.'],
             ['bi-stopwatch', 'Time that adds up', 'A timer or manual entries, weekly timesheets, and approval by the company before anything is billed.'],

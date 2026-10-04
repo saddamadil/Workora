@@ -10,7 +10,7 @@
             </div>
             <div class="rounded-xl border px-3.5 py-2.5 text-sm {{ $mine ? 'border-brand-100 bg-brand-50' : 'border-slate-200 bg-white' }}">
                 @if ($m->invoice_id)<div class="mb-1 text-xs font-medium text-brand-700"><i class="bi bi-receipt"></i> About an invoice @unless ($portal) · <a class="underline" href="{{ route('invoices.show', $m->invoice_id) }}">open</a>@else · <a class="underline" href="{{ route('portal.invoice', $m->invoice_id) }}">open</a>@endunless</div>@endif
-                @if ($m->parent)<div class="mb-2 rounded-lg border-l-2 border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-500">{{ \Illuminate\Support\Str::limit($m->parent->body, 90) }}</div>@endif
+                @if ($m->parent)<div class="mb-2 rounded-lg border-s-2 border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-500">{{ \Illuminate\Support\Str::limit($m->parent->body, 90) }}</div>@endif
                 <div class="break-words">{{ format_message($m->body) }}</div>
                 @foreach ($m->files as $f)
                     @if ($f->isImage() && $f->mime_type !== 'image/svg+xml')<a href="{{ route($fileRoute, $f) }}" target="_blank" class="mt-2 block"><img src="{{ route($fileRoute, $f) }}" alt="{{ $f->original_name }}" class="max-h-48 rounded-lg border border-slate-200"></a>

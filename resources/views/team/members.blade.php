@@ -14,8 +14,8 @@
         @endforeach
     </div>
     <form method="GET" class="relative sm:ms-auto sm:w-64">@if ($type)<input type="hidden" name="type" value="{{ $type }}">@endif
-        <i class="bi bi-search pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input type="search" name="q" value="{{ $search }}" placeholder="Search people" class="input pl-10" aria-label="Search people"></form>
+        <i class="bi bi-search pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="search" name="q" value="{{ $search }}" placeholder="Search people" class="input ps-10" aria-label="Search people"></form>
 </div>
 
 @if ($members->isEmpty())
@@ -59,7 +59,7 @@
                 @if ($canManage)
                     <div class="relative" x-data="{ open: false }" @keydown.escape="open = false">
                         <button type="button" @click="open = !open" class="btn-secondary btn-sm" aria-label="More actions for {{ $u->name }}" :aria-expanded="open"><i class="bi bi-three-dots"></i></button>
-                        <div x-show="open" x-cloak @click.outside="open = false" class="absolute bottom-full right-0 z-20 mb-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                        <div x-show="open" x-cloak @click.outside="open = false" class="absolute bottom-full end-0 z-20 mb-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                             <button type="button" class="menu-item" @click="$dispatch('edit-member-{{ $m->id }}'); open = false"><i class="bi bi-pencil"></i> {{ $fl ? 'Edit rate and status' : 'Edit role and status' }}</button>
                             @if ($m->user_id !== auth()->id())
                                 <form method="POST" action="{{ route('team.update', $m->id) }}">@csrf @method('PATCH')<input type="hidden" name="status" value="{{ $m->status === 'active' ? 'inactive' : 'active' }}">

@@ -2,22 +2,22 @@
 <div class="grid gap-6 lg:grid-cols-3">
 <div class="space-y-6 lg:col-span-2">
     <div class="card overflow-x-auto">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-5 py-3">Description</th><th class="px-3 py-3 text-right">Qty</th><th class="px-3 py-3 text-right">Rate</th><th class="px-3 py-3 text-right">Disc.</th><th class="px-5 py-3 text-right">Amount</th><th></th></tr></thead>
+        <table class="w-full text-start text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-5 py-3">Description</th><th class="px-3 py-3 text-end">Qty</th><th class="px-3 py-3 text-end">Rate</th><th class="px-3 py-3 text-end">Disc.</th><th class="px-5 py-3 text-end">Amount</th><th></th></tr></thead>
             <tbody class="divide-y divide-slate-100">
                 @forelse ($invoice->items as $item)
                     <tr><td class="px-5 py-2.5 text-slate-800">{{ $item->description }}</td>
-                        <td class="whitespace-nowrap px-3 py-2.5 text-right text-slate-600">{{ rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.') }} {{ $item->unit === 'hours' ? 'h' : '' }}</td>
-                        <td class="whitespace-nowrap px-3 py-2.5 text-right text-slate-600">{{ money($item->unit_rate_minor, $cur) }}</td>
-                        <td class="whitespace-nowrap px-3 py-2.5 text-right text-slate-600">{{ (float) $item->discount_percent > 0 ? rtrim(rtrim(number_format((float) $item->discount_percent, 2), '0'), '.').'%' : '' }}</td>
-                        <td class="whitespace-nowrap px-5 py-2.5 text-right font-medium text-slate-900">{{ money($item->amount_minor, $cur) }}</td>
-                        <td class="pr-4"><form method="POST" action="{{ route('invoices.items.remove', [$invoice, $item]) }}">@csrf @method('DELETE')<button class="text-slate-300 hover:text-red-600" aria-label="Remove line"><i class="bi bi-x-lg"></i></button></form></td></tr>
+                        <td class="whitespace-nowrap px-3 py-2.5 text-end text-slate-600">{{ rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.') }} {{ $item->unit === 'hours' ? 'h' : '' }}</td>
+                        <td class="whitespace-nowrap px-3 py-2.5 text-end text-slate-600">{{ money($item->unit_rate_minor, $cur) }}</td>
+                        <td class="whitespace-nowrap px-3 py-2.5 text-end text-slate-600">{{ (float) $item->discount_percent > 0 ? rtrim(rtrim(number_format((float) $item->discount_percent, 2), '0'), '.').'%' : '' }}</td>
+                        <td class="whitespace-nowrap px-5 py-2.5 text-end font-medium text-slate-900">{{ money($item->amount_minor, $cur) }}</td>
+                        <td class="pe-4"><form method="POST" action="{{ route('invoices.items.remove', [$invoice, $item]) }}">@csrf @method('DELETE')<button class="text-slate-300 hover:text-red-600" aria-label="Remove line"><i class="bi bi-x-lg"></i></button></form></td></tr>
                 @empty<tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">No lines yet. Add one below or import approved work.</td></tr>@endforelse
             </tbody>
             <tfoot class="text-sm">
-                <tr class="border-t border-slate-200"><td colspan="4" class="px-5 py-2 text-right text-slate-500">Subtotal</td><td class="px-5 py-2 text-right text-slate-800">{{ money($invoice->subtotal_minor, $cur) }}</td><td></td></tr>
-                @foreach ($invoice->taxBreakdown() as $t)<tr><td colspan="4" class="px-5 py-2 text-right text-slate-500">{{ $t['label'] }} ({{ rtrim(rtrim(number_format((float) $t['rate'], 2), '0'), '.') }}%)</td><td class="px-5 py-2 text-right text-slate-800">{{ money($t['amount_minor'], $cur) }}</td><td></td></tr>@endforeach
-                <tr><td colspan="4" class="px-5 py-2 text-right font-semibold text-slate-900">Total</td><td class="px-5 py-2 text-right text-lg font-bold text-slate-900">{{ money($invoice->total_minor, $cur) }}</td><td></td></tr>
+                <tr class="border-t border-slate-200"><td colspan="4" class="px-5 py-2 text-end text-slate-500">Subtotal</td><td class="px-5 py-2 text-end text-slate-800">{{ money($invoice->subtotal_minor, $cur) }}</td><td></td></tr>
+                @foreach ($invoice->taxBreakdown() as $t)<tr><td colspan="4" class="px-5 py-2 text-end text-slate-500">{{ $t['label'] }} ({{ rtrim(rtrim(number_format((float) $t['rate'], 2), '0'), '.') }}%)</td><td class="px-5 py-2 text-end text-slate-800">{{ money($t['amount_minor'], $cur) }}</td><td></td></tr>@endforeach
+                <tr><td colspan="4" class="px-5 py-2 text-end font-semibold text-slate-900">Total</td><td class="px-5 py-2 text-end text-lg font-bold text-slate-900">{{ money($invoice->total_minor, $cur) }}</td><td></td></tr>
             </tfoot>
         </table>
     </div>

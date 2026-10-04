@@ -7,7 +7,7 @@
             @if ($d->description)<p class="mt-1 text-slate-600">{{ $d->description }}</p>@endif
             @foreach ($d->files as $f)<a href="{{ route('files.show', $f) }}" target="_blank" class="mt-1 inline-flex items-center gap-1 text-xs text-brand-600 hover:underline"><i class="bi bi-paperclip"></i>{{ $f->original_name }}</a>@endforeach
             @foreach ($d->reviews as $r)
-                <div class="mt-2 rounded-lg border-l-4 {{ $r->decision === 'approved' ? 'border-emerald-500' : 'border-orange-500' }} bg-slate-50 px-3 py-2 text-xs"><strong>Round {{ $r->round }}: {{ $r->decision === 'approved' ? 'Approved' : 'Changes requested' }}</strong> by {{ $r->user->name }} · {{ $r->created_at->format('d M, H:i') }}@if ($r->comment)<div class="mt-0.5 text-slate-700">{{ $r->comment }}</div>@endif</div>
+                <div class="mt-2 rounded-lg border-s-4 {{ $r->decision === 'approved' ? 'border-emerald-500' : 'border-orange-500' }} bg-slate-50 px-3 py-2 text-xs"><strong>Round {{ $r->round }}: {{ $r->decision === 'approved' ? 'Approved' : 'Changes requested' }}</strong> by {{ $r->user->name }} · {{ $r->created_at->format('d M, H:i') }}@if ($r->comment)<div class="mt-0.5 text-slate-700">{{ $r->comment }}</div>@endif</div>
             @endforeach
             @if ($d->status === 'changes_requested' && $canEdit)
                 <form method="POST" action="{{ route('deliverables.resubmit', $d) }}" enctype="multipart/form-data" class="mt-3 flex flex-wrap items-center gap-2">@csrf<input type="file" name="files[]" multiple class="input w-auto text-xs" aria-label="Updated files"><button class="btn-primary btn-sm">Send back for review</button></form>

@@ -4,12 +4,12 @@
     @can('track-time')<a href="{{ route('time.index') }}" class="btn-primary btn-sm"><i class="bi bi-stopwatch"></i> Log work</a>@endcan
 </div>
 <div class="card overflow-x-auto">
-    <table class="w-full text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-5 py-3">Date</th><th class="px-3 py-3">Task</th><th class="px-3 py-3">Note</th><th class="px-3 py-3 text-right">Time</th><th class="px-5 py-3 text-right">Billable</th></tr></thead>
+    <table class="w-full text-start text-sm">
+        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-5 py-3">Date</th><th class="px-3 py-3">Task</th><th class="px-3 py-3">Note</th><th class="px-3 py-3 text-end">Time</th><th class="px-5 py-3 text-end">Billable</th></tr></thead>
         <tbody class="divide-y divide-slate-100">
             @forelse ($entries as $e)
                 <tr><td class="whitespace-nowrap px-5 py-2.5">{{ $e->entry_date->format('d M') }}</td><td class="px-3 py-2.5">{{ $e->task?->title ?: '—' }}</td><td class="px-3 py-2.5 text-slate-600">{{ $e->description }}</td>
-                    <td class="whitespace-nowrap px-3 py-2.5 text-right">{{ hours($e->minutes) }}</td><td class="px-5 py-2.5 text-right">{{ $e->is_billable ? 'Billable' : 'Non-billable' }}</td></tr>
+                    <td class="whitespace-nowrap px-3 py-2.5 text-end">{{ hours($e->minutes) }}</td><td class="px-5 py-2.5 text-end">{{ $e->is_billable ? 'Billable' : 'Non-billable' }}</td></tr>
             @empty<tr><td colspan="5" class="px-5 py-10 text-center text-slate-500">No time logged yet.</td></tr>@endforelse
         </tbody>
     </table>

@@ -9,7 +9,7 @@
         <label class="label" for="{{ $name }}">{{ $label }}</label>
         <input id="{{ $name }}" type="file" name="{{ $name }}" accept="image/png,image/jpeg,image/webp"
                @change="preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : preview"
-               class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium">
+               class="block w-full text-sm text-slate-600 file:me-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium">
         <p class="mt-1 text-xs text-slate-400">{{ $hint }}, up to 3 MB.</p>
     </div>
 </div>

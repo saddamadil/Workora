@@ -4,7 +4,7 @@
 <x-page-title title="Team" sub="What each role can do. This table is generated from the rules the app actually enforces." />
 @include('team._tabs', ['active' => 'roles'])
 <div class="card overflow-x-auto">
-    <table class="w-full min-w-[720px] text-left text-sm">
+    <table class="w-full min-w-[720px] text-start text-sm">
         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr><th class="px-5 py-3">Ability</th>
                 @foreach ($roles as $r)<th class="px-3 py-3 text-center">{{ $r->label() }}<div class="font-normal normal-case text-slate-400">{{ $counts[$r->value] ?? 0 }} {{ ($counts[$r->value] ?? 0) == 1 ? 'person' : 'people' }}</div></th>@endforeach</tr>

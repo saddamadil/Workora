@@ -63,7 +63,7 @@
                             <span class="text-xs text-slate-500">by {{ $sub->submittedBy->name }} · {{ $sub->submitted_at->diffForHumans() }}</span></div>
                         <p class="mt-2 whitespace-pre-line text-slate-700">{{ $sub->note }}</p>
                         @foreach ($submissionFiles[$sub->id] ?? [] as $f)
-                            <a href="{{ route('files.download', $f) }}" class="mr-2 mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"><i class="bi bi-paperclip"></i> {{ $f->original_name }} <span class="text-slate-400">{{ $f->humanSize() }}</span></a>
+                            <a href="{{ route('files.download', $f) }}" class="me-2 mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"><i class="bi bi-paperclip"></i> {{ $f->original_name }} <span class="text-slate-400">{{ $f->humanSize() }}</span></a>
                         @endforeach
                         @if ($sub->review_note)<p class="mt-2 rounded-lg bg-slate-50 p-2.5 text-slate-600"><strong>{{ $sub->reviewedBy?->name }}:</strong> {{ $sub->review_note }}</p>@endif
                     </li>
@@ -84,7 +84,7 @@
         @endif
         @if ($canEdit || $canWork)
             <form method="POST" action="{{ route('tasks.attach', $task) }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2 border-t border-slate-100 p-3 first:border-0">@csrf
-                <input type="file" name="files[]" multiple required class="min-w-0 flex-1 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium" aria-label="Files to attach"><button class="btn-secondary">Attach</button></form>
+                <input type="file" name="files[]" multiple required class="min-w-0 flex-1 text-sm text-slate-600 file:me-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium" aria-label="Files to attach"><button class="btn-secondary">Attach</button></form>
         @elseif ($task->files->isEmpty())<p class="px-5 py-6 text-center text-sm text-slate-500">No files attached.</p>@endif
     </div>
 
@@ -120,7 +120,7 @@
                 <form method="POST" action="{{ route('tasks.submit', $task) }}" enctype="multipart/form-data" class="space-y-3 border-t border-slate-100 pt-3">@csrf
                     <label class="label" for="note">Hand in your work</label>
                     <textarea id="note" name="note" rows="3" required class="input" placeholder="What did you do? Anything the reviewer should check?"></textarea>
-                    <input type="file" name="files[]" multiple class="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium" aria-label="Deliverable files">
+                    <input type="file" name="files[]" multiple class="w-full text-sm text-slate-600 file:me-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium" aria-label="Deliverable files">
                     <button class="btn-primary w-full"><i class="bi bi-send"></i> Submit for review</button>
                 </form>
             @elseif (in_array($task->status, ['submitted', 'under_review']))
@@ -148,7 +148,7 @@
 
     {{-- Details --}}
     <div class="card divide-y divide-slate-100 text-sm">
-        <div class="flex justify-between px-5 py-3"><span class="text-slate-500">Assigned to</span><span class="text-right font-medium text-slate-900">{{ $task->assignees->pluck('name')->join(', ') ?: 'Nobody yet' }}</span></div>
+        <div class="flex justify-between px-5 py-3"><span class="text-slate-500">Assigned to</span><span class="text-end font-medium text-slate-900">{{ $task->assignees->pluck('name')->join(', ') ?: 'Nobody yet' }}</span></div>
         <div class="flex justify-between px-5 py-3"><span class="text-slate-500">Due</span><span class="font-medium {{ $task->isOverdue() ? 'text-red-600' : 'text-slate-900' }}">{{ $task->due_at?->format('d M Y') ?? 'No date' }}</span></div>
         <div class="flex justify-between px-5 py-3"><span class="text-slate-500">Estimate</span><span class="font-medium text-slate-900">{{ $task->estimated_hours ? $task->estimated_hours.' h' : '—' }}</span></div>
         <div class="flex justify-between px-5 py-3"><span class="text-slate-500">Logged</span><span class="font-medium text-slate-900">{{ number_format((float) $task->actual_hours, 2) }} h</span></div>

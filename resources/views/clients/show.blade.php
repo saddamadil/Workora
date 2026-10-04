@@ -76,7 +76,7 @@
         <div class="card p-5">
             <dl class="space-y-2 text-sm">
                 @foreach ([['Type', ucfirst($client->type)], ['Contact', $client->contact_name], ['Email', $client->email], ['Phone', $client->phone], ['Website', $client->website], ['Currency', $client->default_currency], ['Payment method', $client->payment_method]] as [$l, $v])
-                    <div class="flex justify-between gap-3"><dt class="text-slate-500">{{ $l }}</dt><dd class="truncate text-right font-medium text-slate-800">{{ $v ?: '—' }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">{{ $l }}</dt><dd class="truncate text-end font-medium text-slate-800">{{ $v ?: '—' }}</dd></div>
                 @endforeach
                 <div class="border-t border-slate-100 pt-2"><dt class="text-slate-500">Billing address</dt>
                     <dd class="mt-1 font-medium text-slate-800">{{ collect([$client->address, $client->city, $client->state, $client->postal_code, \App\Support\Countries::name($client->country_code)])->filter()->join(', ') ?: '—' }}</dd></div>

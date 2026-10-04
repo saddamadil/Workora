@@ -25,7 +25,7 @@
 
         @if ($owing && $payout)
             <div class="card p-5 text-sm"><h2 class="mb-2 font-semibold text-slate-900">How to pay</h2>
-                @foreach ($payout['lines'] as $row)<div class="flex justify-between gap-3 py-0.5"><span class="text-slate-500">{{ $row[0] }}</span><span class="text-right font-medium text-slate-900">{{ $row[1] }}</span></div>@endforeach
+                @foreach ($payout['lines'] as $row)<div class="flex justify-between gap-3 py-0.5"><span class="text-slate-500">{{ $row[0] }}</span><span class="text-end font-medium text-slate-900">{{ $row[1] }}</span></div>@endforeach
                 @if (! empty($payout['link']))<a href="{{ $payout['link'] }}" target="_blank" rel="noopener noreferrer" class="btn-primary mt-3 w-full"><i class="bi bi-credit-card"></i> Pay online</a>@endif
                 <p class="mt-3 text-xs text-slate-500">Pay using the details above and quote <strong>{{ $invoice->number }}</strong> as the reference, then tell your freelancer below.</p>
             </div>
@@ -37,10 +37,10 @@
                 @if ($pending->isNotEmpty())<p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">You told us about {{ $pending->count() }} payment{{ $pending->count() > 1 ? 's' : '' }}. Waiting for your freelancer to confirm.</p>@endif
                 <button type="button" class="btn-secondary w-full" x-show="!open" @click="open = true">I have paid this invoice</button>
                 <div x-show="open" x-cloak class="space-y-3">
-                    <div><label class="label" for="pr-amount">Amount ({{ $invoice->currency }})</label><input id="pr-amount" name="amount" type="number" step="0.01" min="0.01" value="{{ old('amount', \App\Support\Money::toInput($invoice->outstandingMinor())) }}" required class="input">@error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
-                    <div class="grid grid-cols-2 gap-3"><div><label class="label" for="pr-date">Paid on</label><input id="pr-date" type="date" name="paid_on" value="{{ old('paid_on', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required class="input"></div>
-                        <div><label class="label" for="pr-method">Method</label><select id="pr-method" name="method" class="input">@foreach (['bank_transfer' => 'Bank transfer', 'upi' => 'UPI', 'paypal' => 'PayPal', 'wise' => 'Wise', 'cash' => 'Cash', 'other' => 'Other'] as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select></div></div>
-                    <div><label class="label" for="pr-ref">Transaction reference</label><input id="pr-ref" name="reference" value="{{ old('reference') }}" required class="input">@error('reference')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                    <div><label class="label" for="pe-amount">Amount ({{ $invoice->currency }})</label><input id="pe-amount" name="amount" type="number" step="0.01" min="0.01" value="{{ old('amount', \App\Support\Money::toInput($invoice->outstandingMinor())) }}" required class="input">@error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                    <div class="grid grid-cols-2 gap-3"><div><label class="label" for="pe-date">Paid on</label><input id="pe-date" type="date" name="paid_on" value="{{ old('paid_on', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required class="input"></div>
+                        <div><label class="label" for="pe-method">Method</label><select id="pe-method" name="method" class="input">@foreach (['bank_transfer' => 'Bank transfer', 'upi' => 'UPI', 'paypal' => 'PayPal', 'wise' => 'Wise', 'cash' => 'Cash', 'other' => 'Other'] as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select></div></div>
+                    <div><label class="label" for="pe-ref">Transaction reference</label><input id="pe-ref" name="reference" value="{{ old('reference') }}" required class="input">@error('reference')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
                     <button class="btn-primary w-full">Send to my freelancer</button>
                 </div>
             </form>

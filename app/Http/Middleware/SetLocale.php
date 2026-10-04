@@ -14,9 +14,9 @@ class SetLocale
     public function handle(Request $request, Closure $next): Response
     {
         $locale = $request->user()?->getAttributes()['locale'] ?? null;
-        if ($locale && array_key_exists($locale, self::SUPPORTED)) {
-            app()->setLocale($locale);
-        }
+        $locale = $locale && array_key_exists($locale, self::SUPPORTED) ? $locale : config('app.locale');
+        app()->setLocale($locale);
+        \Illuminate\Support\Carbon::setLocale($locale);
 
         return $next($request);
     }

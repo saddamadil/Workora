@@ -122,34 +122,34 @@
     <a href="{{ route($isClient ? 'portal.dashboard' : 'dashboard') }}" class="flex items-center gap-2 font-bold text-slate-900">
         <span class="grid size-8 place-items-center rounded-lg bg-slate-900 text-brand-500"><i class="bi bi-lightning-charge-fill"></i></span> Freelancy
     </a>
-    <button type="button" @click="search = true; $nextTick(() => $refs.q && $refs.q.focus())" class="ml-auto grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Search"><i class="bi bi-search text-xl"></i></button>
-    <a href="{{ route('notifications.index') }}" class="relative mr-1 grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Notifications"><i class="bi bi-bell text-xl"></i>@if (($unreadNotifications ?? 0) > 0)<span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand-500"></span>@endif</a>
+    <button type="button" @click="search = true; $nextTick(() => $refs.q && $refs.q.focus())" class="ms-auto grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Search"><i class="bi bi-search text-xl"></i></button>
+    <a href="{{ route('notifications.index') }}" class="relative me-1 grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Notifications"><i class="bi bi-bell text-xl"></i>@if (($unreadNotifications ?? 0) > 0)<span class="absolute end-1.5 top-1.5 size-2.5 rounded-full bg-brand-500"></span>@endif</a>
     <button type="button" @click="nav = !nav" class="grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Open menu" :aria-expanded="nav">
         <i class="bi bi-list text-2xl"></i>
     </button>
 </header>
 
 <div class="lg:flex">
-    <aside :class="nav ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-           class="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-slate-200 bg-white p-3 transition-transform lg:sticky lg:top-0 lg:h-screen lg:shrink-0" aria-label="Main navigation">
+    <aside :class="nav ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:translate-x-0'"
+           class="fixed inset-y-0 start-0 z-40 flex w-60 flex-col border-e border-slate-200 bg-white p-3 transition-transform lg:sticky lg:top-0 lg:h-screen lg:shrink-0" aria-label="Main navigation">
         <a href="{{ route($isClient ? 'portal.dashboard' : 'dashboard') }}" class="mb-4 hidden items-center gap-2.5 px-2 pt-1 text-lg font-bold text-slate-900 lg:flex">
             <span class="grid size-9 place-items-center rounded-lg bg-slate-900 text-brand-500"><i class="bi bi-lightning-charge-fill"></i></span> Freelancy
         </a>
 
         <button type="button" @click="search = true; nav = false; $nextTick(() => $refs.q && $refs.q.focus())" class="mb-2 flex min-h-11 w-full items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50">
-            <i class="bi bi-search text-lg"></i> {{ __('ui.search') }} <kbd class="ml-auto hidden rounded border border-slate-200 px-1.5 text-[11px] lg:inline">Ctrl K</kbd>
+            <i class="bi bi-search text-lg"></i> {{ __('ui.search') }} <kbd class="ms-auto hidden rounded border border-slate-200 px-1.5 text-[11px] lg:inline">Ctrl K</kbd>
         </button>
         <a href="{{ route('notifications.index') }}" class="mb-2 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 {{ request()->routeIs('notifications.*') ? 'bg-slate-100 text-slate-900' : '' }}">
-            <i class="bi bi-bell text-lg"></i> {{ __('ui.notifications') }} @if (($unreadNotifications ?? 0) > 0)<span class="ml-auto rounded-full bg-brand-500 px-2 text-xs font-semibold text-slate-900">{{ $unreadNotifications }}<span class="sr-only"> unread</span></span>@endif
+            <i class="bi bi-bell text-lg"></i> {{ __('ui.notifications') }} @if (($unreadNotifications ?? 0) > 0)<span class="ms-auto rounded-full bg-brand-500 px-2 text-xs font-semibold text-slate-900">{{ $unreadNotifications }}<span class="sr-only"> unread</span></span>@endif
         </a>
 
         @if ($quick)
-            <button type="button" @click="create = true; nav = false" class="btn-primary mb-3 w-full"><i class="bi bi-plus-lg"></i> {{ __('ui.new') }} <kbd class="ml-1 hidden rounded border border-slate-900/20 px-1.5 text-[11px] font-semibold lg:inline">N</kbd></button>
+            <button type="button" @click="create = true; nav = false" class="btn-primary mb-3 w-full"><i class="bi bi-plus-lg"></i> {{ __('ui.new') }} <kbd class="ms-1 hidden rounded border border-slate-900/20 px-1.5 text-[11px] font-semibold lg:inline">N</kbd></button>
         @endif
 
         @if (($myOrgs ?? collect())->count() > 1)
             <div x-data="{ open: false }" class="relative mb-3">
-                <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-800">
+                <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 text-start text-sm font-semibold text-slate-800">
                     <span class="truncate">{{ $org?->name }}</span><i class="bi bi-chevron-expand text-slate-400"></i>
                 </button>
                 <div x-show="open" x-cloak @click.outside="open = false" class="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
@@ -173,12 +173,12 @@
                                 @php $active = $route && (request()->routeIs($prefix.'.*') || request()->routeIs($prefix)); @endphp
                                 @if ($route)
                                     <a href="{{ route($route) }}" @if ($active) aria-current="page" @endif
-                                       class="flex min-h-11 items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-sm font-medium {{ $active ? 'border-brand-500 bg-slate-100 text-slate-900' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                                       class="flex min-h-11 items-center gap-3 rounded-lg border-s-2 px-3 py-2 text-sm font-medium {{ $active ? 'border-brand-500 bg-slate-100 text-slate-900' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                                         <i class="bi {{ $icon }} text-lg {{ $active ? 'text-brand-600' : '' }}"></i> {{ $label }}
                                     </a>
                                 @else
-                                    <span class="flex min-h-11 cursor-not-allowed items-center gap-3 rounded-lg border-l-2 border-transparent px-3 py-2 text-sm font-medium text-slate-400" title="Coming soon" aria-disabled="true">
-                                        <i class="bi {{ $icon }} text-lg"></i> {{ $label }} <span class="ml-auto rounded bg-slate-100 px-1.5 text-[10px] font-semibold uppercase text-slate-500">Soon</span>
+                                    <span class="flex min-h-11 cursor-not-allowed items-center gap-3 rounded-lg border-s-2 border-transparent px-3 py-2 text-sm font-medium text-slate-400" title="Coming soon" aria-disabled="true">
+                                        <i class="bi {{ $icon }} text-lg"></i> {{ $label }} <span class="ms-auto rounded bg-slate-100 px-1.5 text-[10px] font-semibold uppercase text-slate-500">Soon</span>
                                     </span>
                                 @endif
                             @endforeach
@@ -264,7 +264,7 @@
             @foreach ($quick as [$route, $icon, $label])
                 <a href="{{ route($route) }}" class="flex min-h-14 items-center gap-3 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-800 hover:bg-slate-50"><i class="bi {{ $icon }} text-lg text-brand-600"></i>{{ $label }}</a>
             @endforeach
-            <span class="flex min-h-14 cursor-not-allowed items-center gap-3 rounded-lg border border-dashed border-slate-200 px-3 text-sm text-slate-400" title="Coming soon"><i class="bi bi-chat-dots text-lg"></i>Send message <span class="ml-auto text-[10px] font-semibold uppercase">Soon</span></span>
+            <span class="flex min-h-14 cursor-not-allowed items-center gap-3 rounded-lg border border-dashed border-slate-200 px-3 text-sm text-slate-400" title="Coming soon"><i class="bi bi-chat-dots text-lg"></i>Send message <span class="ms-auto text-[10px] font-semibold uppercase">Soon</span></span>
         </div>
     </div>
 </div>

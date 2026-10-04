@@ -8,7 +8,7 @@
     @if (! empty($warnings))
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <h2 class="mb-2 font-semibold"><i class="bi bi-exclamation-triangle"></i> Review tax settings and details</h2>
-            <ul class="list-disc space-y-1 pl-5">@foreach ($warnings as $w)<li>{{ $w }}</li>@endforeach</ul>
+            <ul class="list-disc space-y-1 ps-5">@foreach ($warnings as $w)<li>{{ $w }}</li>@endforeach</ul>
         </div>
     @endif
 

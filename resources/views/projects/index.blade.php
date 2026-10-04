@@ -7,8 +7,8 @@
 </x-page-title>
 
 <form method="GET" class="mb-5 flex flex-col gap-3 sm:flex-row">
-    <div class="relative flex-1"><i class="bi bi-search pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input type="search" name="q" value="{{ $search }}" placeholder="Search projects" class="input pl-10" aria-label="Search projects"></div>
+    <div class="relative flex-1"><i class="bi bi-search pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="search" name="q" value="{{ $search }}" placeholder="Search projects" class="input ps-10" aria-label="Search projects"></div>
     <select name="status" class="input sm:w-48" onchange="this.form.submit()" aria-label="Status">
         <option value="">All statuses</option>
         @foreach (\App\Models\Project::STATUSES as $s)<option value="{{ $s }}" @selected($status === $s)>{{ \App\Models\Project::STATUS_LABELS[$s] }}</option>@endforeach

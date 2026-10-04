@@ -4,7 +4,7 @@
 @php
     $q = fn (array $x) => route('tasks.index', array_filter(array_merge(request()->only('q', 'scope', 'mine', 'project', 'view', 'month'), $x), fn ($v) => $v !== null && $v !== ''));
     $columns = ['todo' => ['To do', ['backlog', 'assigned']], 'progress' => ['In progress', ['in_progress']], 'review' => ['Review', ['submitted', 'under_review', 'revision_required']], 'done' => ['Completed', ['approved']]];
-    $prio = ['urgent' => 'border-l-red-500', 'high' => 'border-l-orange-500', 'medium' => 'border-l-sky-500', 'low' => 'border-l-slate-300'];
+    $prio = ['urgent' => 'border-s-red-500', 'high' => 'border-s-orange-500', 'medium' => 'border-s-sky-500', 'low' => 'border-s-slate-300'];
 @endphp
 <x-page-title :title="$role->isFreelancer() ? 'My tasks' : 'Tasks'" sub="Everything you can see across your projects." />
 

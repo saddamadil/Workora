@@ -16,8 +16,8 @@
         </div>
         <form method="GET" action="{{ route('files.index') }}" class="relative w-full sm:w-72">
             @foreach (request()->only('folder', 'type', 'sort') as $k => $v) <input type="hidden" name="{{ $k }}" value="{{ $v }}"> @endforeach
-            <i class="bi bi-search pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="search" name="q" value="{{ $search }}" placeholder="Search files" class="input pl-10" aria-label="Search files">
+            <i class="bi bi-search pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="search" name="q" value="{{ $search }}" placeholder="Search files" class="input ps-10" aria-label="Search files">
         </form>
     </div>
 
@@ -119,7 +119,7 @@
 
                             <div x-data="{ open: false, rename: false }" class="relative" @keydown.escape="open = false">
                                 <button type="button" @click="open = !open" class="btn-secondary btn-sm" aria-label="More actions" :aria-expanded="open"><i class="bi bi-three-dots"></i></button>
-                                <div x-show="open" x-cloak @click.outside="open = false" class="absolute bottom-full right-0 z-20 mb-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                                <div x-show="open" x-cloak @click.outside="open = false" class="absolute bottom-full end-0 z-20 mb-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                                     <a href="{{ route('files.show', $file) }}" target="_blank" rel="noopener" class="menu-item"><i class="bi bi-box-arrow-up-right"></i> Open</a>
                                     @can('update', $file)
                                         <button type="button" @click="rename = true; open = false" class="menu-item"><i class="bi bi-pencil"></i> Rename</button>
@@ -188,7 +188,7 @@
 
             <template x-if="url">
                 <div class="mt-5">
-                    <div class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2 pl-3">
+                    <div class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2 ps-3">
                         <input x-ref="link" readonly :value="url" class="min-w-0 flex-1 bg-transparent text-sm text-slate-800 focus:outline-none" @focus="$el.select()" aria-label="Share link">
                         <button type="button" @click="copy" class="btn-primary btn-sm"><i class="bi" :class="copied ? 'bi-check2' : 'bi-clipboard'"></i> <span x-text="copied ? 'Copied' : 'Copy'"></span></button>
                     </div>

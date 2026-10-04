@@ -9,7 +9,7 @@
         <p class="whitespace-pre-line text-slate-800">{{ $req->description ?: 'No details given.' }}</p>
         <dl class="grid grid-cols-3 gap-3"><div><dt class="text-xs text-slate-500">Priority</dt><dd class="font-medium">{{ ucfirst($req->priority) }}</dd></div><div><dt class="text-xs text-slate-500">Project</dt><dd class="font-medium">{{ $req->project?->name ?: '—' }}</dd></div><div><dt class="text-xs text-slate-500">Wanted by</dt><dd class="font-medium">{{ $req->preferred_deadline?->format('d M Y') ?: '—' }}</dd></div></dl>
         @foreach ($req->files as $f)<a href="{{ route('files.show', $f) }}" target="_blank" class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50"><i class="bi {{ $f->icon()[0] }}"></i>{{ $f->original_name }}</a>@endforeach
-        @if ($req->response_note)<div class="rounded-lg border-l-4 border-brand-500 bg-slate-50 p-4"><div class="mb-1 text-xs font-semibold uppercase text-slate-500">Your reply</div>{{ $req->response_note }}</div>@endif
+        @if ($req->response_note)<div class="rounded-lg border-s-4 border-brand-500 bg-slate-50 p-4"><div class="mb-1 text-xs font-semibold uppercase text-slate-500">Your reply</div>{{ $req->response_note }}</div>@endif
         <a href="{{ route('messages.index', ['client' => $req->client_id, 'project' => $req->project_id]) }}" class="inline-flex items-center gap-1 text-brand-600 hover:underline"><i class="bi bi-chat-dots"></i> Discuss in messages</a>
     </div>
     <div class="space-y-4">

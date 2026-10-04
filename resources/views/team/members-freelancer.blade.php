@@ -15,7 +15,7 @@
             </div>
             <dl class="mt-4 space-y-1.5 text-sm">
                 <div class="flex justify-between gap-3"><dt class="text-slate-500">Country</dt><dd class="font-medium text-slate-800">{{ \App\Support\Countries::name($c->country_code) ?: '—' }}</dd></div>
-                <div class="flex justify-between gap-3"><dt class="text-slate-500">Billing address</dt><dd class="truncate text-right font-medium text-slate-800">{{ collect([$c->address_line1, $c->city, $c->state])->filter()->join(', ') ?: '—' }}</dd></div>
+                <div class="flex justify-between gap-3"><dt class="text-slate-500">Billing address</dt><dd class="truncate text-end font-medium text-slate-800">{{ collect([$c->address_line1, $c->city, $c->state])->filter()->join(', ') ?: '—' }}</dd></div>
                 @foreach (\App\Support\TaxFields::lines($c->country_code, $c->tax_ids) as [$l, $v])<div class="flex justify-between gap-3"><dt class="text-slate-500">{{ $l }}</dt><dd class="font-mono text-slate-800">{{ $v }}</dd></div>@endforeach
                 <div class="flex justify-between gap-3"><dt class="text-slate-500">Default currency</dt><dd class="font-medium text-slate-800">{{ $c->base_currency }}</dd></div>
                 <div class="flex justify-between gap-3"><dt class="text-slate-500">Payment terms</dt><dd class="font-medium text-slate-800">Net {{ $c->setting('payment_terms_days', 14) }}</dd></div>

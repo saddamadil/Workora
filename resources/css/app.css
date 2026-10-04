@@ -66,5 +66,11 @@
     @apply border-brand-600 bg-brand-600 text-white hover:bg-brand-700;
 }
 @utility menu-item {
-    @apply flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm text-slate-700 hover:bg-slate-50;
+    @apply flex w-full items-center gap-2.5 px-3.5 py-2 text-start text-sm text-slate-700 hover:bg-slate-50;
+}
+
+/* Right-to-left languages (Arabic): arrows and chevrons point the other way. */
+[dir="rtl"] :is(.bi-arrow-left, .bi-arrow-right, .bi-arrow-left-short, .bi-arrow-right-short, .bi-chevron-left, .bi-chevron-right, .bi-caret-left-fill, .bi-caret-right-fill, .bi-box-arrow-up-right, .bi-send)::before {
+    display: inline-block;
+    transform: scaleX(-1);
 }

@@ -12,6 +12,6 @@
     <p class="whitespace-pre-line text-slate-800">{{ $req->description ?: 'No details given.' }}</p>
     <dl class="grid grid-cols-2 gap-3"><div><dt class="text-xs text-slate-500">Priority</dt><dd class="font-medium">{{ ucfirst($req->priority) }}</dd></div><div><dt class="text-xs text-slate-500">Project</dt><dd class="font-medium">{{ $req->project?->name ?: '—' }}</dd></div><div><dt class="text-xs text-slate-500">Preferred deadline</dt><dd class="font-medium">{{ $req->preferred_deadline?->format('d M Y') ?: '—' }}</dd></div></dl>
     @foreach ($req->files as $f)<a href="{{ route('portal.files.show', $f) }}" target="_blank" class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50"><i class="bi {{ $f->icon()[0] }}"></i>{{ $f->original_name }}</a>@endforeach
-    @if ($req->response_note)<div class="rounded-lg border-l-4 border-brand-500 bg-slate-50 p-4"><div class="mb-1 text-xs font-semibold uppercase text-slate-500">Reply from your freelancer</div>{{ $req->response_note }}</div>@endif
+    @if ($req->response_note)<div class="rounded-lg border-s-4 border-brand-500 bg-slate-50 p-4"><div class="mb-1 text-xs font-semibold uppercase text-slate-500">Reply from your freelancer</div>{{ $req->response_note }}</div>@endif
 </div>
 @endsection

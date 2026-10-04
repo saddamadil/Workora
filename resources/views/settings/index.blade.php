@@ -25,7 +25,7 @@
     <form method="POST" action="{{ route('settings.locale') }}" class="card flex flex-wrap items-end gap-3 p-5">@csrf
         <div class="min-w-48 flex-1"><label class="label" for="locale">{{ __('ui.language') }}</label>
             <select id="locale" name="locale" class="input">@foreach ($locales as $code => $name)<option value="{{ $code }}" @selected($current === $code)>{{ $name }}</option>@endforeach</select>
-            <p class="mt-1 text-xs text-slate-500">Menus and common labels are translated. Some screens are still in English while translations are completed.</p></div>
+            <p class="mt-1 text-xs text-slate-500">Screens, menus and messages are translated. Names, numbers, emails and PDFs you create stay as you wrote them, and a few longer messages may still appear in English.</p></div>
         <button class="btn-primary">{{ __('ui.save') }}</button>
     </form>
 

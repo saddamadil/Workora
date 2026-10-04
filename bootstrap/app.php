@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
             SetCurrentOrganization::class,
+            \App\Http\Middleware\TranslatePhrases::class,
         ]);
 
         // Route-model binding (/files/{file}) queries tenant-scoped models, so the
