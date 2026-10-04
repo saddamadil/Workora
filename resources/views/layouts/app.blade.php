@@ -37,6 +37,7 @@
             ['portal.payments', 'bi-cash-coin', __('ui.payments'), 'portal.payments', true],
             ['portal.profile', 'bi-person-circle', __('ui.profile'), 'portal.profile', true],
             ['portal.company', 'bi-building', __('ui.company'), 'portal.company', true],
+            ['portal.team', 'bi-people-fill', 'Our team', 'portal.team', $role?->isClientOwner() ?? false],
             ['settings.index', 'bi-gear', __('ui.settings'), 'settings.index', true],
             ['help', 'bi-life-preserver', __('ui.help'), 'help', true],
         ]];

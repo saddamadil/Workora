@@ -14,18 +14,20 @@ enum OrganizationRole: string
     case Viewer = 'viewer';
     case Freelancer = 'freelancer';
     case Client = 'client';
+    case ClientMember = 'client_member';
 
     public function label(): string
     {
         return match ($this) {
             self::Owner => 'Owner',
             self::Admin => 'Admin',
-            self::ProjectManager => 'Project Manager',
+            self::ProjectManager => 'Manager',
             self::TeamMember => 'Team Member',
-            self::Finance => 'Finance',
+            self::Finance => 'Accountant',
             self::Viewer => 'Viewer',
             self::Freelancer => 'Freelancer',
             self::Client => 'Client',
+            self::ClientMember => 'Client member',
         };
     }
 
@@ -55,6 +57,12 @@ enum OrganizationRole: string
 
     /** A client's login to the portal. Sees only their own client's work. */
     public function isClient(): bool
+    {
+        return $this === self::Client || $this === self::ClientMember;
+    }
+
+    /** The main contact of a client company: may approve work, report payments and invite colleagues. */
+    public function isClientOwner(): bool
     {
         return $this === self::Client;
     }

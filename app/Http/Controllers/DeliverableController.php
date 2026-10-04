@@ -121,6 +121,8 @@ class DeliverableController extends Controller
     private function guardClient(Request $request, Deliverable $deliverable): array
     {
         abort_unless($this->ctx->isPortal(), 403);
+        // Only the main contact decides on work; colleagues can read, comment and message.
+        abort_unless($this->tenancy->isClientOwner(), 403, 'Only the main contact of your company can approve work.');
         $client = $this->ctx->client($request);
         $project = Project::query()->where('client_id', $client->id)->findOrFail($deliverable->project_id);
         abort_unless($deliverable->status === 'in_review', 422, 'This deliverable is not waiting for review.');

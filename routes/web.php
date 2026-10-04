@@ -114,6 +114,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/payments', [PortalController::class, 'payments'])->name('payments');
         Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
         Route::post('/invoices/{invoice}/paid', [PaymentReportController::class, 'store'])->name('invoices.paid');
+        Route::get('/team', [PortalController::class, 'team'])->name('team');
+        Route::post('/team', [PortalController::class, 'inviteColleague'])->name('team.invite');
+        Route::delete('/team/{member}', [PortalController::class, 'removeColleague'])->name('team.remove');
         Route::get('/company', [PortalController::class, 'company'])->name('company');
         Route::post('/company', [PortalController::class, 'updateCompany'])->name('company.update');
         Route::get('/profile', [PortalController::class, 'profile'])->name('profile');

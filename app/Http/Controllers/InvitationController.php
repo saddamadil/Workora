@@ -60,7 +60,7 @@ class InvitationController extends Controller
         $request->session()->forget('invite_token');
         $request->session()->put('current_organization_id', $invitation->organization_id);
 
-        return redirect()->route($invitation->role === 'client' ? 'portal.dashboard' : 'dashboard')->with('status', 'You joined '.$invitation->organization->name.'.');
+        return redirect()->route(in_array($invitation->role, ['client', 'client_member'], true) ? 'portal.dashboard' : 'dashboard')->with('status', 'You joined '.$invitation->organization->name.'.');
     }
 
     private function find(string $token): Invitation

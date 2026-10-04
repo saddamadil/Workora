@@ -41,7 +41,7 @@ class ClientContext
     /** People who log in as this client. */
     public function clientUsers(Client $client): Collection
     {
-        $ids = OrganizationMember::query()->where('client_id', $client->id)->where('role', OrganizationRole::Client->value)->where('status', 'active')->pluck('user_id');
+        $ids = OrganizationMember::query()->where('client_id', $client->id)->whereIn('role', [OrganizationRole::Client->value, OrganizationRole::ClientMember->value])->where('status', 'active')->pluck('user_id');
 
         return User::query()->whereIn('id', $ids)->get();
     }

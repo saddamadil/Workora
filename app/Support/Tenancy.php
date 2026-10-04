@@ -94,6 +94,11 @@ class Tenancy
         return $this->role()?->isClient() ?? false;
     }
 
+    public function isClientOwner(): bool
+    {
+        return $this->role()?->isClientOwner() ?? false;
+    }
+
     /** The one client record a portal login is tied to. */
     public function clientId(): ?string
     {

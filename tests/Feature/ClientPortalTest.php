@@ -225,4 +225,61 @@ class ClientPortalTest extends WorkoraTestCase
         $this->actingAs($sam)->get(route('clients.index', ['filter' => 'international']))->assertSee('Bella Person')->assertDontSee('ABC GmbH');
         $this->actingAs($sam)->get(route('clients.index', ['q' => 'bella']))->assertSee('Bella Person')->assertDontSee('ABC GmbH');
     }
+
+    public function test_a_client_company_can_have_member_logins_with_fewer_rights(): void
+    {
+        $sam = $this->solo();
+        $abc = $this->client($sam, 'ABC GmbH', 'abc@example.com');
+        $xyz = $this->client($sam, 'XYZ Ltd', 'xyz@example.com');
+        $project = $this->actingAs($sam)->post(route('projects.store'), ['name' => 'SEO', 'client_id' => $abc->id, 'status' => 'active', 'currency' => 'INR']);
+        $project = \App\Models\Project::withoutGlobalScopes()->firstOrFail();
+        $alice = $this->portalUser($sam, $abc, 'Alice');
+        $this->actingAs($sam)->post(route('projects.deliverables.store', $project), ['title' => 'Report']);
+        $invoice = $this->sentInvoiceFor($sam, $abc);
+
+        $this->actingAs($alice)->get(route('portal.team'))->assertOk();
+        $this->actingAs($alice)->post(route('portal.team.invite'), ['email' => 'bob@abc.example'])->assertRedirect();
+        $inv = Invitation::withoutGlobalScopes()->where('role', 'client_member')->firstOrFail();
+        $this->assertSame($abc->id, $inv->client_id);
+        $bob = User::create(['name' => 'Bob', 'email' => 'bob@abc.example', 'password' => 'secret-pass-1']);
+        $this->actingAs($bob)->post(route('invite.accept', $inv->token))->assertRedirect(route('portal.dashboard'));
+
+        // A member sees the same company data...
+        $this->actingAs($bob)->get(route('portal.project', $project->slug))->assertOk()->assertSee('Report');
+        $this->actingAs($bob)->get(route('portal.invoice', $invoice))->assertOk();
+        $this->actingAs($bob)->post(route('portal.messages.store'), ['body' => 'Hello from Bob'])->assertRedirect();
+        $this->actingAs($sam)->get(route('messages.index', ['client' => $abc->id]))->assertSee('Hello from Bob');
+        // ...but cannot decide, report payments, edit the company or invite people.
+        $d = \App\Models\Deliverable::withoutGlobalScopes()->firstOrFail();
+        $this->actingAs($bob)->post(route('portal.deliverables.approve', $d))->assertForbidden();
+        $this->actingAs($bob)->post(route('portal.invoices.paid', $invoice), ['amount' => '10', 'method' => 'upi', 'paid_on' => now()->toDateString(), 'reference' => 'X'])->assertForbidden();
+        $this->actingAs($bob)->post(route('portal.company.update'), ['name' => 'Hijacked'])->assertForbidden();
+        $this->actingAs($bob)->post(route('portal.team.invite'), ['email' => 'eve@abc.example'])->assertForbidden();
+        $this->actingAs($bob)->get(route('clients.index'))->assertRedirect(route('portal.dashboard'));
+        $this->assertSame('ABC GmbH', Client::withoutGlobalScopes()->findOrFail($abc->id)->name);
+        $this->actingAs($bob)->get(route('portal.dashboard'))->assertDontSee('Our team');
+
+        // Another client's contact cannot touch this team; the main contact can remove a member.
+        $xavier = $this->portalUser($sam, $xyz, 'Xavier');
+        $member = \App\Models\OrganizationMember::withoutGlobalScopes()->where('user_id', $bob->id)->firstOrFail();
+        $this->actingAs($xavier)->delete(route('portal.team.remove', $member))->assertNotFound();
+        $this->actingAs($alice)->delete(route('portal.team.remove', $member))->assertRedirect();
+        $this->actingAs($bob)->get(route('portal.dashboard'))->assertRedirect(route('onboarding.index'));
+
+        // Owners cannot be removed; team roles are relabelled.
+        $this->assertSame('Manager', \App\Enums\OrganizationRole::ProjectManager->label());
+        $this->assertSame('Accountant', \App\Enums\OrganizationRole::Finance->label());
+        $this->actingAs($sam)->get(route('team.roles'))->assertOk()->assertSee('Accountant')->assertDontSee('Client member');
+    }
+
+    private function sentInvoiceFor(User $owner, Client $client): Invoice
+    {
+        $before = Invoice::withoutGlobalScopes()->pluck('id')->all();
+        $this->actingAs($owner)->post(route('invoices.store'), ['bill_to_type' => 'client', 'client_id' => $client->id, 'issue_date' => now()->toDateString(), 'terms_days' => '14', 'currency' => 'INR', 'invoice_type' => 'domestic', 'template' => 'professional', 'tax_treatment' => 'none']);
+        $invoice = Invoice::withoutGlobalScopes()->whereNotIn('id', $before)->firstOrFail();
+        $this->actingAs($owner)->post(route('invoices.items.add', $invoice), ['description' => 'Work', 'quantity' => 1, 'unit' => 'items', 'unit_rate' => '100']);
+        $this->actingAs($owner)->post(route('invoices.send', $invoice));
+
+        return $invoice->refresh();
+    }
 }

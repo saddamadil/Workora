@@ -22,6 +22,7 @@ class PaymentReportController extends Controller
     public function store(Request $request, Invoice $invoice, Notifier $notifier): RedirectResponse
     {
         abort_unless($this->ctx->isPortal(), 403);
+        abort_unless($this->tenancy->isClientOwner(), 403, 'Only the main contact of your company can report payments.');
         $this->authorize('view', $invoice);
         abort_if($invoice->outstandingMinor() <= 0, 422, 'Nothing is owed on this invoice.');
 

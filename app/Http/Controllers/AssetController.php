@@ -33,7 +33,7 @@ class AssetController extends Controller
 
         // A client sees photos of the people they work with, never of other clients.
         if ($this->tenancy->isClient() && $me->id !== $user->id) {
-            abort_unless(OrganizationMember::query()->where('user_id', $user->id)->where('role', '!=', 'client')->where('status', 'active')->exists(), 404);
+            abort_unless(OrganizationMember::query()->where('user_id', $user->id)->whereNotIn('role', ['client', 'client_member'])->where('status', 'active')->exists(), 404);
         }
 
         return $this->send($user->avatar_path);

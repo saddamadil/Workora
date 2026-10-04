@@ -80,7 +80,7 @@ class ClientController extends Controller
             'invoices' => $invoices,
             'billed' => $sent->groupBy('currency')->map(fn ($g) => (int) $g->sum('total_minor'))->all(),
             'outstanding' => $sent->whereIn('status', ['submitted', 'under_review', 'approved', 'partially_paid'])->groupBy('currency')->map(fn ($g) => (int) $g->sum(fn ($i) => $i->total_minor - $i->amount_paid_minor))->all(),
-            'portalUsers' => OrganizationMember::query()->with('user:id,name,email')->where('client_id', $client->id)->where('role', 'client')->get(),
+            'portalUsers' => OrganizationMember::query()->with('user:id,name,email')->where('client_id', $client->id)->whereIn('role', ['client', 'client_member'])->get(),
             'pendingInvite' => Invitation::query()->where('client_id', $client->id)->whereNull('accepted_at')->where('expires_at', '>', now())->latest()->first(),
         ]);
     }
@@ -148,7 +148,7 @@ class ClientController extends Controller
 
         $email = strtolower($client->email);
         $existing = User::where('email', $email)->first();
-        if ($existing && OrganizationMember::query()->where('user_id', $existing->id)->where('role', '!=', 'client')->exists()) {
+        if ($existing && OrganizationMember::query()->where('user_id', $existing->id)->whereNotIn('role', ['client', 'client_member'])->exists()) {
             return back()->with('error', 'That email already belongs to someone on your team, so it cannot also be a client login.');
         }
 

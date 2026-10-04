@@ -164,6 +164,58 @@ class PortalController extends Controller
         ]);
     }
 
+    /** The main contact's list of colleagues who can log in for this client company. */
+    public function team(): View
+    {
+        $client = $this->client();
+
+        return view('portal.team', [
+            'members' => OrganizationMember::query()->with('user:id,name,email')->where('client_id', $client->id)->whereIn('role', ['client', 'client_member'])->where('status', 'active')->get(),
+            'invitations' => \App\Models\Invitation::query()->where('client_id', $client->id)->whereNull('accepted_at')->where('expires_at', '>', now())->latest()->get(),
+            'isOwner' => $this->tenancy->isClientOwner(),
+        ]);
+    }
+
+    public function inviteColleague(Request $request): RedirectResponse
+    {
+        abort_unless($this->tenancy->isClientOwner(), 403);
+        $client = $this->client();
+        $data = $request->validate(['email' => ['required', 'email', 'max:190']]);
+        $email = strtolower($data['email']);
+
+        $existing = \App\Models\User::where('email', $email)->first();
+        if ($existing && OrganizationMember::query()->where('user_id', $existing->id)->whereNotIn('role', ['client', 'client_member'])->exists()) {
+            return back()->with('error', 'That email cannot be added here.');
+        }
+        if ($existing && OrganizationMember::query()->where('user_id', $existing->id)->where('client_id', $client->id)->where('status', 'active')->exists()) {
+            return back()->with('error', 'That person already has access.');
+        }
+
+        $invitation = \App\Models\Invitation::query()->where('client_id', $client->id)->where('role', 'client_member')->whereRaw('lower(email) = ?', [$email])->whereNull('accepted_at')->where('expires_at', '>', now())->first()
+            ?? \App\Models\Invitation::create(['client_id' => $client->id, 'email' => $email, 'role' => 'client_member', 'member_type' => 'client', 'invited_by' => $request->user()->id]);
+
+        $link = route('invite.show', $invitation->token);
+        try {
+            \Illuminate\Support\Facades\Mail::raw("{$request->user()->name} invited you to the {$client->name} portal on Freelancy.\n\nOpen this link to join:\n{$link}\n", fn ($m) => $m->to($email)->subject("{$request->user()->name} invited you to Freelancy"));
+        } catch (\Throwable) {
+            // The link is shown on screen either way.
+        }
+        AuditLog::record('client.member_invited', $client);
+
+        return back()->with('status', 'Invitation ready. If email is not set up, send them this link: '.$link);
+    }
+
+    public function removeColleague(Request $request, OrganizationMember $member): RedirectResponse
+    {
+        abort_unless($this->tenancy->isClientOwner(), 403);
+        $client = $this->client();
+        abort_unless($member->client_id === $client->id && $member->role === \App\Enums\OrganizationRole::ClientMember, 404);
+        $member->update(['status' => 'inactive']);
+        AuditLog::record('client.member_removed', $client);
+
+        return back()->with('status', 'Access removed.');
+    }
+
     /** The client's own company details. They fill in invoices addressed to this client. */
     public function company(): View
     {
@@ -172,6 +224,7 @@ class PortalController extends Controller
 
     public function updateCompany(Request $request, \App\Services\ImageStore $images): RedirectResponse
     {
+        abort_unless($this->tenancy->isClientOwner(), 403, 'Only the main contact can change company details.');
         $client = $this->client();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
