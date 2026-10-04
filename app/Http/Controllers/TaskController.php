@@ -26,6 +26,7 @@ class TaskController extends Controller
         $user = $request->user();
         $search = trim($request->string('q')->toString());
         $scope = $request->string('scope')->toString(); // open (default), review, done, all
+        $view = in_array($request->query('view'), ['list', 'board', 'calendar'], true) ? $request->query('view') : 'list';
 
         $tasks = Task::query()->visibleTo($user)
             ->with('project:id,name,slug', 'assignees:id,name')
@@ -35,10 +36,26 @@ class TaskController extends Controller
             ->when($scope === 'review', fn ($q) => $q->whereIn('status', ['submitted', 'under_review']))
             ->when($scope === 'done', fn ($q) => $q->where('status', 'approved'))
             ->when($scope === '' || $scope === 'open', fn ($q) => $q->whereNotIn('status', ['approved', 'cancelled']))
-            ->orderByRaw('due_at is null')->orderBy('due_at')->latest()
-            ->paginate(30)->withQueryString();
+            ->orderByRaw('due_at is null')->orderBy('due_at')->latest();
+
+        // The board and the calendar show everything in one go; the list pages.
+        if ($view === 'board') {
+            $tasks = $tasks->when($scope === '' || $scope === 'open' || $scope === 'all', fn ($q) => $q->where('status', '!=', 'cancelled'))->limit(400)->get();
+        } elseif ($view === 'calendar') {
+            try {
+                $month = \Illuminate\Support\Carbon::parse($request->query('month', now()->format('Y-m').'-01'))->startOfMonth();
+            } catch (\Throwable) {
+                $month = now()->startOfMonth();
+            }
+            $tasks = $tasks->where('status', '!=', 'cancelled')->whereBetween('due_at', [$month->copy()->startOfWeek(), $month->copy()->endOfMonth()->endOfWeek()])->get();
+        } else {
+            $tasks = $tasks->paginate(30)->withQueryString();
+        }
 
         return view('tasks.index', [
+            'view' => $view,
+            'month' => $month ?? null,
+            'canMoveAnywhere' => app(Tenancy::class)->isSolo(),
             'tasks' => $tasks,
             'scope' => $scope ?: 'open',
             'search' => $search,
@@ -110,6 +127,50 @@ class TaskController extends Controller
         $task->delete();
 
         return redirect()->route('projects.show', $project)->with('status', 'Task deleted.');
+    }
+
+    public const COLUMNS = ['todo' => 'To do', 'progress' => 'In progress', 'review' => 'Review', 'done' => 'Completed'];
+
+    /** Drag a task to another board column. Moves that need a reviewer or a hand-in note are refused with a reason. */
+    public function move(Request $request, Task $task): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('view', $task);
+        $data = $request->validate(['column' => ['required', Rule::in(array_keys(self::COLUMNS))]]);
+        $solo = app(Tenancy::class)->isSolo();
+        $to = $data['column'];
+        $user = $request->user();
+
+        $deny = fn (string $why) => response()->json(['ok' => false, 'message' => $why], 422);
+
+        if (in_array($task->status, ['approved', 'cancelled'], true) && ! $solo) {
+            return $deny('A closed task cannot be moved.');
+        }
+
+        if ($solo) {
+            $this->authorize('update', $task);
+            match ($to) {
+                'todo' => $task->update(['status' => $task->assignees()->exists() ? 'assigned' : 'backlog', 'approved_by' => null, 'approved_at' => null]),
+                'progress' => $task->update(['status' => 'in_progress', 'approved_by' => null, 'approved_at' => null]),
+                'review' => $task->update(['status' => 'under_review', 'approved_by' => null, 'approved_at' => null]),
+                'done' => $task->update(['status' => 'approved', 'approved_by' => $user->id, 'approved_at' => now()]),
+            };
+            if ($to === 'done') {
+                \App\Models\AuditLog::record('task.completed', $task, ['project_id' => $task->project_id]);
+                $this->tellClientTaskDone($task, $user);
+            }
+
+            return response()->json(['ok' => true]);
+        }
+
+        if (! in_array($to, ['todo', 'progress'], true)) {
+            return $deny($to === 'review' ? 'Open the task and hand in your work with a note. A reviewer then decides.' : 'Completed work is approved by a reviewer from the task page.');
+        }
+        if (! $user->can('work', $task) || ! in_array($task->status, ['backlog', 'assigned', 'in_progress', 'revision_required'], true)) {
+            return $deny('You can only move your own open tasks between To do and In progress.');
+        }
+        $task->update(['status' => $to === 'progress' ? 'in_progress' : ($task->assignees()->exists() ? 'assigned' : 'backlog')]);
+
+        return response()->json(['ok' => true]);
     }
 
     /** On a solo workspace there is nobody to review the work, so the freelancer marks it done. */

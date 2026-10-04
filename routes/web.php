@@ -196,6 +196,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
     Route::post('/tasks/{task}/start', [TaskController::class, 'start'])->name('tasks.start');
+    Route::post('/tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
     Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
     Route::post('/tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');
     Route::post('/tasks/{task}/review', [TaskController::class, 'review'])->name('tasks.review');

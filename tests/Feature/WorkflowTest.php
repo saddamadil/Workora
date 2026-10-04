@@ -183,4 +183,45 @@ class WorkflowTest extends PortalTestCase
         $this->assertSame(1, AppNotification::withoutGlobalScopes()->where('user_id', $alice->id)->where('type', 'task')->count());
         $this->actingAs($alice)->post(route('tasks.complete', Task::withoutGlobalScopes()->firstOrFail()))->assertRedirect(route('portal.dashboard'));
     }
+
+    public function test_task_board_and_calendar_views_and_moves(): void
+    {
+        $sam = $this->solo();
+        $abc = $this->makeClient($sam, 'ABC GmbH', 'abc@example.com');
+        $seo = $this->makeProject($abc, $sam, 'SEO Campaign');
+        $alice = $this->portalUser($sam, $abc, 'Alice');
+        $this->actingAs($sam)->post(route('tasks.store', $seo), ['title' => 'Board task', 'priority' => 'high', 'due_at' => now()->addDays(2)->toDateString()]);
+        $task = Task::withoutGlobalScopes()->firstOrFail();
+
+        $this->actingAs($sam)->get(route('tasks.index', ['view' => 'board']))->assertOk()->assertSee('Board task')->assertSee('Drag a card');
+        $this->actingAs($sam)->get(route('tasks.index', ['view' => 'calendar']))->assertOk()->assertSee('Board task');
+        $this->actingAs($sam)->get(route('tasks.index', ['view' => 'calendar', 'month' => 'nonsense']))->assertOk();
+
+        foreach (['progress' => 'in_progress', 'review' => 'under_review', 'todo' => 'assigned', 'done' => 'approved'] as $col => $status) {
+            $this->actingAs($sam)->postJson(route('tasks.move', $task), ['column' => $col])->assertOk();
+            $this->assertSame($status, $task->fresh()->status);
+        }
+        $this->assertNotNull($task->fresh()->approved_at);
+        $this->actingAs($sam)->postJson(route('tasks.move', $task), ['column' => 'progress'])->assertOk();
+        $this->assertNull($task->fresh()->approved_at, 'reopening clears the approval');
+        $this->actingAs($sam)->postJson(route('tasks.move', $task), ['column' => 'nope'])->assertStatus(422);
+        $this->actingAs($alice)->postJson(route('tasks.move', $task), ['column' => 'done'])->assertForbidden();
+    }
+
+    public function test_in_a_team_workspace_board_moves_respect_review_rules(): void
+    {
+        $owner = $this->userWithWorkspace('Olive');
+        $fiona = $this->freelancer($owner);
+        $project = $this->projectFor($owner, [$fiona]);
+        $task = $this->taskFor($owner, $project, [$fiona], ['status' => 'assigned']);
+
+        $this->actingAs($fiona)->postJson(route('tasks.move', $task), ['column' => 'progress'])->assertOk();
+        $this->assertSame('in_progress', $task->fresh()->status);
+        $this->actingAs($fiona)->postJson(route('tasks.move', $task), ['column' => 'review'])->assertStatus(422)->assertJsonPath('ok', false);
+        $this->actingAs($fiona)->postJson(route('tasks.move', $task), ['column' => 'done'])->assertStatus(422);
+        $this->assertSame('in_progress', $task->fresh()->status);
+
+        $stranger = $this->freelancer($owner, 'Gus');
+        $this->actingAs($stranger)->postJson(route('tasks.move', $task), ['column' => 'todo'])->assertForbidden();
+    }
 }
