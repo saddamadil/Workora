@@ -27,11 +27,22 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        $provider = Auth::getProvider();
+        $user = $provider->retrieveByCredentials($credentials);
+
+        if (! $user || ! $provider->validateCredentials($user, $credentials)) {
             return back()->withInput($request->only('email'))
                 ->withErrors(['email' => 'That email and password do not match.']);
         }
 
+        // With two-factor on, nobody is signed in until the second step is passed.
+        if ($user->two_factor_confirmed_at !== null) {
+            $request->session()->put(['two_factor.user' => $user->id, 'two_factor.remember' => $request->boolean('remember'), 'two_factor.at' => now()->timestamp]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
         $request->user()->forceFill([
             'last_login_at' => now(),

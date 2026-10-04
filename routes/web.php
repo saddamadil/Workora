@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClientController;
@@ -57,6 +59,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::get('/two-factor', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+    Route::post('/two-factor', [TwoFactorChallengeController::class, 'verify'])->middleware('throttle:10,1')->name('two-factor.verify');
     Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'send'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'form'])->name('password.reset');
@@ -82,6 +86,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/welcome/client', [WelcomeController::class, 'client'])->name('welcome.client');
     Route::post('/welcome/project', [WelcomeController::class, 'project'])->name('welcome.project');
     Route::post('/welcome/done', [WelcomeController::class, 'done'])->name('welcome.done');
+    Route::get('/security', [SecurityController::class, 'index'])->name('security.index');
+    Route::post('/security/two-factor', [SecurityController::class, 'start'])->name('security.start');
+    Route::post('/security/two-factor/confirm', [SecurityController::class, 'confirm'])->middleware('throttle:10,1')->name('security.confirm');
+    Route::post('/security/two-factor/disable', [SecurityController::class, 'disable'])->middleware('throttle:5,1')->name('security.disable');
+    Route::post('/security/two-factor/codes', [SecurityController::class, 'recoveryCodes'])->middleware('throttle:5,1')->name('security.codes');
+    Route::post('/security/sign-out-others', [SecurityController::class, 'signOutOtherDevices'])->middleware('throttle:5,1')->name('security.sign-out-others');
     Route::get('/search', SearchController::class)->name('search.index');
     Route::get('/help', fn () => view('help'))->name('help');
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');

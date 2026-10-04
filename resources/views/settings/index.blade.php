@@ -13,6 +13,7 @@
             <a href="{{ route('portal.profile') }}" class="card flex items-center gap-3 p-4 hover:border-slate-300"><i class="bi bi-person-circle text-xl text-brand-600"></i><span><span class="block font-semibold text-slate-900">Your profile</span><span class="text-sm text-slate-500">Name and password</span></span></a>
             <a href="{{ route('portal.company') }}" class="card flex items-center gap-3 p-4 hover:border-slate-300"><i class="bi bi-building text-xl text-brand-600"></i><span><span class="block font-semibold text-slate-900">Company</span><span class="text-sm text-slate-500">Billing details used on invoices</span></span></a>
         @endunless
+        <a href="{{ route('security.index') }}" class="card flex items-center gap-3 p-4 hover:border-slate-300"><i class="bi bi-shield-lock text-xl text-brand-600"></i><span><span class="block font-semibold text-slate-900">Security</span><span class="text-sm text-slate-500">Two-factor sign-in and signed-in devices</span></span></a>
         <a href="{{ route('notifications.preferences') }}" class="card flex items-center gap-3 p-4 hover:border-slate-300"><i class="bi bi-bell text-xl text-brand-600"></i><span><span class="block font-semibold text-slate-900">Notifications</span><span class="text-sm text-slate-500">Choose what you hear about, in the app and by email</span></span></a>
     </div>
 

@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 class SetCurrentOrganization
 {
     /** Route names a client login may use. */
-    public const CLIENT_ROUTES = ['portal.*', 'profile.password', 'notifications.*', 'search.*', 'help', 'settings.index', 'settings.locale', 'invoices.preview', 'invoices.print', 'invoices.pdf', 'invoices.receipt', 'assets.*', 'organizations.switch'];
+    public const CLIENT_ROUTES = ['portal.*', 'profile.password', 'security.*', 'notifications.*', 'search.*', 'help', 'settings.index', 'settings.locale', 'invoices.preview', 'invoices.print', 'invoices.pdf', 'invoices.receipt', 'assets.*', 'organizations.switch'];
 
     public function __construct(private Tenancy $tenancy) {}
 
@@ -50,7 +50,7 @@ class SetCurrentOrganization
             $this->tenancy->clear();
 
             // The profile page works without a workspace; it just has no menu then.
-            if ($request->routeIs('profile.*')) {
+            if ($request->routeIs('profile.*', 'security.*')) {
                 return $next($request);
             }
 
