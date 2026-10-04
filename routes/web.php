@@ -12,6 +12,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationSwitchController;
 use App\Http\Controllers\PaymentProfileController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PublicShareController;
@@ -55,6 +56,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    // The client portal. A client login is limited to these routes by SetCurrentOrganization.
+    Route::prefix('portal')->name('portal.')->group(function () {
+        Route::get('/', [PortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/projects', [PortalController::class, 'projects'])->name('projects');
+        Route::get('/projects/{project}', [PortalController::class, 'project'])->name('project');
+        Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
+        Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
+        Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
+        Route::post('/profile', [PortalController::class, 'updateProfile'])->name('profile.update');
+    });
+
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::get('/team/members', [TeamController::class, 'members'])->name('team.members');
     Route::get('/team/members/{member}', [TeamController::class, 'member'])->name('team.member');
@@ -70,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/team/{member}', [TeamController::class, 'update'])->name('team.update');
 
     Route::resource('clients', ClientController::class);
+    Route::post('/clients/{client}/invite', [ClientController::class, 'invite'])->name('clients.invite');
 
     Route::resource('projects', ProjectController::class);
     Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.members.add');

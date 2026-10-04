@@ -14,7 +14,7 @@ class Invitation extends Model
     use BelongsToOrganization, HasFactory, HasUuids;
 
     protected $fillable = [
-        'organization_id', 'email', 'role', 'member_type',
+        'organization_id', 'client_id', 'email', 'role', 'member_type',
         'token', 'invited_by', 'expires_at', 'accepted_at',
     ];
 
@@ -39,6 +39,11 @@ class Invitation extends Model
     public function invitedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
     }
 
     public function isPending(): bool

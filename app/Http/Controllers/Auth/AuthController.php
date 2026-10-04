@@ -56,18 +56,27 @@ class AuthController extends Controller
             'workspace' => ['nullable', 'string', 'max:120'],
         ]);
 
-        $user = DB::transaction(function () use ($data, $workspaces) {
+        $invited = $request->session()->has('invite_token');
+
+        $user = DB::transaction(function () use ($data, $workspaces, $invited) {
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => $data['password'],
             ]);
 
-            if ($data['account_type'] === 'company') {
+            if ($invited) {
+                // Joining through an invitation: the workspace they join is the one they were invited to.
+                // A freelancer still gets their one profile, which follows them across companies.
+                if ($data['account_type'] === 'freelancer') {
+                    FreelancerProfile::create(['user_id' => $user->id]);
+                }
+            } elseif ($data['account_type'] === 'company') {
                 $workspaces->createFor($user, ($data['workspace'] ?? null) ?: $data['name']."'s company");
             } else {
-                // A freelancer has one profile that follows them across every company.
+                // A freelancer on their own gets a workspace to run their business: clients, projects, invoices.
                 FreelancerProfile::create(['user_id' => $user->id]);
+                $workspaces->createFor($user, ($data['workspace'] ?? null) ?: $data['name'], 'solo');
             }
 
             return $user;
@@ -76,7 +85,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return $this->afterAuth($request)->with('status', 'Welcome to Workora.');
+        return $this->afterAuth($request)->with('status', 'Welcome to '.'Freelancy'.'.');
     }
 
     /** Pick up an invitation the person was looking at before they signed in, else go home. */

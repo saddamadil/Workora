@@ -35,9 +35,14 @@ class InvitationController extends Controller
         abort_unless($invitation->isPending(), 410, 'This invitation has expired or was already used.');
         abort_unless(strcasecmp($user->email, $invitation->email) === 0, 403, 'This invitation was sent to a different email address.');
 
+        // An invitation never changes who someone already is in this workspace.
+        $already = OrganizationMember::withoutGlobalScopes()->where('organization_id', $invitation->organization_id)->where('user_id', $user->id)->first();
+        abort_if($already && $already->role->value !== $invitation->role, 422, 'You already have a different role in this workspace.');
+
         OrganizationMember::withoutGlobalScopes()->updateOrCreate(
             ['organization_id' => $invitation->organization_id, 'user_id' => $user->id],
             [
+                'client_id' => $invitation->client_id,
                 'role' => $invitation->role,
                 'member_type' => $invitation->member_type,
                 'status' => 'active',
@@ -55,7 +60,7 @@ class InvitationController extends Controller
         $request->session()->forget('invite_token');
         $request->session()->put('current_organization_id', $invitation->organization_id);
 
-        return redirect()->route('dashboard')->with('status', 'You joined '.$invitation->organization->name.'.');
+        return redirect()->route($invitation->role === 'client' ? 'portal.dashboard' : 'dashboard')->with('status', 'You joined '.$invitation->organization->name.'.');
     }
 
     private function find(string $token): Invitation

@@ -22,6 +22,30 @@ class DashboardStats
         return $this->tenancy->isFreelancer() ? $this->freelancer($user) : $this->staff($user);
     }
 
+    /** The home screen of a freelancer running their own business: what to do today and what is coming. */
+    public function solo(User $user): array
+    {
+        $monthStart = now()->startOfMonth();
+        $open = ['submitted', 'under_review', 'approved', 'partially_paid'];
+        $perCurrency = fn ($rows, callable $fn) => $rows->groupBy('currency')->map(fn ($g) => (int) $g->sum($fn))->filter()->all();
+
+        $openInvoices = Invoice::query()->whereIn('status', $open)->get();
+        $tasks = fn () => Task::query()->visibleTo($user)->with('project:id,name,slug,client_id', 'project.client:id,name')->whereNotIn('status', ['approved', 'cancelled']);
+
+        return [
+            'mode' => 'solo',
+            'activeClients' => \App\Models\Client::query()->where('status', 'active')->count(),
+            'activeProjects' => Project::query()->where('status', 'active')->count(),
+            'outstanding' => $perCurrency($openInvoices, fn ($i) => $i->total_minor - $i->amount_paid_minor),
+            'thisMonth' => $perCurrency(Payment::query()->where('status', 'paid')->where('paid_at', '>=', $monthStart)->get(), fn ($p) => $p->amount_minor),
+            'todayTasks' => $tasks()->where('due_at', '<', now()->endOfDay())->orderBy('due_at')->limit(8)->get(),
+            'upcomingTasks' => $tasks()->whereBetween('due_at', [now()->endOfDay(), now()->addDays(14)])->orderBy('due_at')->limit(5)->get(),
+            'upcomingInvoices' => $openInvoices->filter(fn ($i) => $i->due_date->lte(now()->addDays(14)))->sortBy('due_date')->take(5)->values(),
+            'upcomingProjects' => Project::query()->where('status', 'active')->whereBetween('deadline', [now()->startOfDay(), now()->addDays(30)])->orderBy('deadline')->limit(4)->get(['id', 'name', 'slug', 'deadline']),
+            'activity' => \App\Models\AuditLog::query()->with('user:id,name')->latest('created_at')->limit(8)->get(),
+        ];
+    }
+
     private function staff(User $user): array
     {
         $role = $this->tenancy->role();

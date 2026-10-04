@@ -27,7 +27,7 @@
         </div>
         <x-country-tax :country="$organization->country_code" :values="$organization->tax_ids ?? []" />
         @error('tax_ids.*')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
-        <p class="text-xs text-slate-500">The boxes change with the country. Workora prints what you enter; it does not decide what tax applies.</p>
+        <p class="text-xs text-slate-500">The boxes change with the country. Freelancy prints what you enter; it does not decide what tax applies.</p>
     </section>
 
     <section class="space-y-4 border-t border-slate-100 pt-6">

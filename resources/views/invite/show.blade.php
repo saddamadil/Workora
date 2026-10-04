@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', 'Invitation · Workora')
+@section('title', 'Invitation · Freelancy')
 @section('content')
 <div class="card p-7 text-center">
     <span class="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-50 text-3xl text-brand-600"><i class="bi bi-envelope-open"></i></span>
@@ -7,9 +7,13 @@
         <h1 class="mt-4 text-lg font-bold text-slate-900">This invitation is no longer valid</h1>
         <p class="mt-1 text-sm text-slate-500">It was already used or has expired. Ask {{ $organization->name }} to send a new one.</p>
     @else
-        <h1 class="mt-4 text-lg font-bold text-slate-900">Join {{ $organization->name }}</h1>
+        <h1 class="mt-4 text-lg font-bold text-slate-900">{{ $invitation->role === 'client' ? 'Open your portal with' : 'Join' }} {{ $organization->name }}</h1>
         <p class="mt-1 text-sm text-slate-500">
-            You were invited as {{ $invitation->member_type === 'freelancer' ? 'a freelancer' : 'a '.str_replace('_', ' ', $invitation->role) }}.
+            @if ($invitation->role === 'client')
+                You were invited to your client portal: follow projects, share files and see invoices.
+            @else
+                You were invited as {{ $invitation->member_type === 'freelancer' ? 'a freelancer' : 'a '.str_replace('_', ' ', $invitation->role) }}.
+            @endif
             Invitation for <strong>{{ $invitation->email }}</strong>.
         </p>
         @auth

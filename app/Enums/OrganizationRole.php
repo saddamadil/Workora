@@ -13,6 +13,7 @@ enum OrganizationRole: string
     case Finance = 'finance';
     case Viewer = 'viewer';
     case Freelancer = 'freelancer';
+    case Client = 'client';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum OrganizationRole: string
             self::Finance => 'Finance',
             self::Viewer => 'Viewer',
             self::Freelancer => 'Freelancer',
+            self::Client => 'Client',
         };
     }
 
@@ -49,6 +51,12 @@ enum OrganizationRole: string
     public function canApprovePayment(): bool
     {
         return Permissions::allows('approve-invoices', $this);
+    }
+
+    /** A client's login to the portal. Sees only their own client's work. */
+    public function isClient(): bool
+    {
+        return $this === self::Client;
     }
 
     public function isFreelancer(): bool

@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', 'Password needed · Workora')
+@section('title', 'Password needed · Freelancy')
 @section('content')
 <div class="card p-7 text-center">
     <span class="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-50 text-3xl text-brand-600"><i class="bi bi-lock"></i></span>

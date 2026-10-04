@@ -24,6 +24,18 @@ Built on Laravel 13, Tailwind CSS 4, Alpine.js and Bootstrap Icons. SQLite, MySQ
   hours and milestones (an hour can never be billed twice), earnings and payment history.
 - Profile with rate, availability and how to be paid.
 
+**Freelancer workspace and client portal**
+
+- A freelancer who signs up gets their own workspace (solo mode): clients, projects, tasks, work log,
+  invoices and payments, with a dashboard of today's tasks, upcoming deadlines and what is owed.
+- Invite a client by email from their profile. The client gets a separate portal (their own login,
+  connected to an existing account if they have one) showing only their own projects, task status and
+  sent invoices, with PDF download. Adding the same client twice is blocked.
+- Client logins are confined to the portal in one place (`SetCurrentOrganization::CLIENT_ROUTES`);
+  portal queries are pinned to the client's record and select only client-safe fields.
+- Not built yet, shown as "Soon" in the interface: messages, requests, client file sharing, online
+  payment, calendar, reports, notifications, global search.
+
 **Team, profiles and invoicing**
 
 - Team has six tabs: Overview, Members (cards), Invitations, Roles & permissions (generated from the

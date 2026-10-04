@@ -17,6 +17,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SetCurrentOrganization
 {
+    /** Route names a client login may use. */
+    public const CLIENT_ROUTES = ['portal.*', 'invoices.preview', 'invoices.print', 'invoices.pdf', 'assets.*', 'organizations.switch'];
+
     public function __construct(private Tenancy $tenancy) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -53,6 +56,15 @@ class SetCurrentOrganization
 
         $this->tenancy->set($membership->organization, $membership);
         $request->session()->put('current_organization_id', $membership->organization_id);
+
+        // A client login only ever sees the portal, the invoice documents shared with them and their
+        // own profile. Every other route belongs to the freelancer's workspace, so it is closed here
+        // once, centrally, instead of in each controller.
+        if ($membership->role->isClient() && ! $request->routeIs(self::CLIENT_ROUTES)) {
+            $this->tenancy->clear();
+
+            return $request->expectsJson() ? abort(403) : redirect()->route('portal.dashboard');
+        }
 
         $response = $next($request);
 

@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', 'Link unavailable · Workora')
+@section('title', 'Link unavailable · Freelancy')
 @section('content')
 <div class="card p-8 text-center">
     <span class="mx-auto grid size-14 place-items-center rounded-2xl bg-slate-100 text-3xl text-slate-500"><i class="bi bi-slash-circle"></i></span>

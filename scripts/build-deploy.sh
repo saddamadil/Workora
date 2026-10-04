@@ -46,7 +46,7 @@ echo "==> Writing production .env"
 cp .env.example .env
 KEY="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')"
 set_env() { sed -i "s|^#\? \?$1=.*|$1=$2|" .env; }
-set_env APP_NAME Workora
+set_env APP_NAME Freelancy
 set_env APP_ENV production
 set_env APP_KEY "$KEY"
 set_env APP_DEBUG false

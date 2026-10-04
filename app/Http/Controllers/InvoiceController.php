@@ -39,7 +39,7 @@ class InvoiceController extends Controller
         $this->authorize('viewAny', Invoice::class);
 
         $me = $request->user();
-        $isFreelancer = $this->tenancy->isFreelancer();
+        $isFreelancer = $this->tenancy->issuesOwnInvoices();
         $status = $request->query('status');
         $search = trim((string) $request->query('q'));
 
@@ -76,7 +76,7 @@ class InvoiceController extends Controller
     public function create(Request $request): View
     {
         $this->authorize('create', Invoice::class);
-        $isFreelancer = $this->tenancy->isFreelancer();
+        $isFreelancer = $this->tenancy->issuesOwnInvoices();
 
         $issuerId = $isFreelancer ? $request->user()->id : $request->query('freelancer');
         $issuer = $issuerId ? User::with('freelancerProfile')->find($issuerId) : null;
@@ -94,7 +94,7 @@ class InvoiceController extends Controller
         $this->authorize('create', Invoice::class);
         $data = $this->validatedDetails($request);
 
-        $issuerId = $this->tenancy->isFreelancer() ? $request->user()->id : ($request->input('freelancer_id') ?: abort(422, 'Choose the freelancer this invoice is for.'));
+        $issuerId = $this->tenancy->issuesOwnInvoices() ? $request->user()->id : ($request->input('freelancer_id') ?: abort(422, 'Choose the freelancer this invoice is for.'));
         $this->authorize('createFor', [Invoice::class, $issuerId]);
         $issuer = User::with('freelancerProfile')->findOrFail($issuerId);
         $profile = $issuer->freelancerProfile;
@@ -167,7 +167,7 @@ class InvoiceController extends Controller
 
         return view('invoices.show', [
             'invoice' => $invoice,
-            'payout' => \Illuminate\Support\Facades\Gate::allows('pay') ? $this->documents->payment($invoice) : null,
+            'payout' => \Illuminate\Support\Facades\Gate::allows('pay') || $this->tenancy->isClient() ? $this->documents->payment($invoice) : null,
             'canDuplicate' => $request->user()->can('duplicate', $invoice),
         ]);
     }
@@ -492,7 +492,7 @@ class InvoiceController extends Controller
             $bytes = $pdf->render($invoice);
             $name = $invoice->organization->name;
 
-            Mail::raw("Hello,\n\nPlease find invoice {$invoice->number} from {$invoice->freelancer->name} attached.\nAmount: ".money($invoice->total_minor, $invoice->currency)."\nDue: {$invoice->due_date->format('d M Y')}\n\nSent through Workora for {$name}.\n",
+            Mail::raw("Hello,\n\nPlease find invoice {$invoice->number} from {$invoice->freelancer->name} attached.\nAmount: ".money($invoice->total_minor, $invoice->currency)."\nDue: {$invoice->due_date->format('d M Y')}\n\nSent through Freelancy for {$name}.\n",
                 fn ($m) => $m->to($to)->subject("Invoice {$invoice->number} from {$invoice->freelancer->name}")->attachData($bytes, InvoicePdf::filename($invoice), ['mime' => 'application/pdf']));
 
             return ' A copy was emailed to '.$to.'.';
@@ -503,7 +503,7 @@ class InvoiceController extends Controller
 
     private function wizardData(Invoice $invoice, int $step, ?User $issuer): array
     {
-        $isFreelancer = $this->tenancy->isFreelancer();
+        $isFreelancer = $this->tenancy->issuesOwnInvoices();
         $data = [
             'invoice' => $invoice,
             'step' => $step,
@@ -552,7 +552,7 @@ class InvoiceController extends Controller
         }
 
         return [
-            'bill_to_type' => $client ? 'client' : 'company',
+            'bill_to_type' => $client || $org->mode === 'solo' ? 'client' : 'company',
             'client_id' => $client?->id,
             'issue_date' => now(),
             'due_date' => now()->addDays($terms),
@@ -572,7 +572,7 @@ class InvoiceController extends Controller
 
         return $request->validate([
             'freelancer_id' => ['nullable', 'uuid'],
-            'bill_to_type' => ['required', Rule::in(['company', 'client'])],
+            'bill_to_type' => ['required', Rule::in($this->tenancy->isSolo() ? ['client'] : ['company', 'client'])],
             'client_id' => ['required_if:bill_to_type,client', 'nullable', 'uuid'],
             'contract_id' => ['nullable', 'uuid'],
             'issue_date' => ['required', 'date'],

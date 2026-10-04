@@ -19,7 +19,7 @@ class OrganizationMember extends Model
     use BelongsToOrganization, HasFactory, HasUuids;
 
     protected $fillable = [
-        'organization_id', 'user_id', 'role', 'member_type', 'status',
+        'organization_id', 'user_id', 'client_id', 'role', 'member_type', 'status',
         'freelancer_category_id', 'default_rate_minor', 'default_rate_currency',
         'internal_notes', 'invited_by', 'invited_at', 'joined_at',
     ];

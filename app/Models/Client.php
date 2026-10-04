@@ -14,7 +14,7 @@ class Client extends Model
     use BelongsToOrganization, HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'organization_id', 'name', 'legal_name', 'contact_name', 'email', 'phone', 'address', 'notes',
+        'organization_id', 'name', 'type', 'status', 'website', 'legal_name', 'contact_name', 'email', 'phone', 'address', 'notes',
         'logo_path', 'city', 'state', 'postal_code', 'country_code', 'tax_ids', 'default_currency', 'payment_method',
     ];
 

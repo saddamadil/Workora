@@ -26,7 +26,7 @@
             <div>
                 <span class="label">Bill to</span>
                 <div class="flex gap-2">
-                    <label class="chip cursor-pointer" :class="billTo === 'company' && 'chip-active'"><input type="radio" name="bill_to_type" value="company" x-model="billTo" class="sr-only"> {{ $org->name }}</label>
+                    @unless ($org->mode === 'solo')<label class="chip cursor-pointer" :class="billTo === 'company' && 'chip-active'"><input type="radio" name="bill_to_type" value="company" x-model="billTo" class="sr-only">  {{ $org->name }}</label>@endunless
                     <label class="chip cursor-pointer" :class="billTo === 'client' && 'chip-active'"><input type="radio" name="bill_to_type" value="client" x-model="billTo" class="sr-only"> A client</label>
                 </div>
             </div>
@@ -79,7 +79,7 @@
     <div class="card space-y-5 p-5">
         <div>
             <h2 class="font-semibold text-slate-900">Tax</h2>
-            <p class="text-sm text-slate-500">Workora prints what you choose here. It does not decide which tax applies to you. Check with your accountant if unsure.</p>
+            <p class="text-sm text-slate-500">Freelancy prints what you choose here. It does not decide which tax applies to you. Check with your accountant if unsure.</p>
         </div>
         <div class="grid gap-4 sm:grid-cols-3">
             <div class="sm:col-span-2"><label class="label" for="tax_treatment">Tax treatment</label>

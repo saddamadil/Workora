@@ -29,7 +29,7 @@ class TimeController extends Controller
 
         // Finished entries only: a running timer has no minutes yet and shows in its own card.
         $entries = TimeEntry::query()->where('user_id', $user->id)->where('minutes', '>', 0)
-            ->whereBetween('entry_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->whereDate('entry_date', '>=', $weekStart->toDateString())->whereDate('entry_date', '<=', $weekEnd->toDateString())
             ->with('project:id,name,slug', 'task:id,title')->orderBy('entry_date')->orderBy('created_at')->get();
 
         $timesheet = Timesheet::query()->where('user_id', $user->id)->whereDate('period_start', $weekStart)->first();
@@ -180,7 +180,7 @@ class TimeController extends Controller
         $weekStart = $this->weekStart($request->input('week'));
         $weekEnd = $weekStart->copy()->endOfWeek();
 
-        if (TimeEntry::where('user_id', $user->id)->whereNotNull('started_at')->whereNull('ended_at')->whereBetween('entry_date', [$weekStart->toDateString(), $weekEnd->toDateString()])->exists()) {
+        if (TimeEntry::where('user_id', $user->id)->whereNotNull('started_at')->whereNull('ended_at')->whereDate('entry_date', '>=', $weekStart->toDateString())->whereDate('entry_date', '<=', $weekEnd->toDateString())->exists()) {
             return back()->with('error', 'Stop your running timer before submitting the week.');
         }
 
@@ -192,7 +192,7 @@ class TimeController extends Controller
             return back()->with('error', 'This week was already submitted.');
         }
 
-        $entries = TimeEntry::where('user_id', $user->id)->whereBetween('entry_date', [$weekStart->toDateString(), $weekEnd->toDateString()])->where('minutes', '>', 0)->get();
+        $entries = TimeEntry::where('user_id', $user->id)->whereDate('entry_date', '>=', $weekStart->toDateString())->whereDate('entry_date', '<=', $weekEnd->toDateString())->where('minutes', '>', 0)->get();
 
         if ($entries->isEmpty()) {
             return back()->with('error', 'There is no time to submit for this week.');

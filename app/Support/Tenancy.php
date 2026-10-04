@@ -83,10 +83,33 @@ class Tenancy
         return $this->role()?->isFreelancer() ?? false;
     }
 
-    /** A member of the company's own team, as opposed to a freelancer. */
+    /** A member of the company's own team: not a freelancer and not a client. */
     public function isStaff(): bool
     {
-        return $this->role() !== null && ! $this->isFreelancer();
+        return $this->role() !== null && ! $this->isFreelancer() && ! $this->isClient();
+    }
+
+    public function isClient(): bool
+    {
+        return $this->role()?->isClient() ?? false;
+    }
+
+    /** The one client record a portal login is tied to. */
+    public function clientId(): ?string
+    {
+        return $this->isClient() ? $this->membership?->client_id : null;
+    }
+
+    /** One freelancer running their own business, with their own clients. */
+    public function isSolo(): bool
+    {
+        return ($this->organization?->mode ?? 'team') === 'solo';
+    }
+
+    /** Whether this person issues invoices in their own name (a freelancer, or the owner of a solo workspace). */
+    public function issuesOwnInvoices(): bool
+    {
+        return $this->isFreelancer() || ($this->isSolo() && $this->role() === OrganizationRole::Owner);
     }
 
     public function isUnscoped(): bool

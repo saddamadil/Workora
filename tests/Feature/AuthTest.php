@@ -41,7 +41,7 @@ class AuthTest extends WorkoraTestCase
         $this->assertGuest();
     }
 
-    public function test_a_freelancer_can_sign_up_without_a_company(): void
+    public function test_a_freelancer_who_signs_up_gets_their_own_workspace(): void
     {
         $this->post('/register', [
             'account_type' => 'freelancer', 'name' => 'Fay Free', 'email' => 'fay@example.com',
@@ -50,12 +50,29 @@ class AuthTest extends WorkoraTestCase
 
         $user = User::where('email', 'fay@example.com')->firstOrFail();
         $this->assertNotNull($user->freelancerProfile);
-        $this->assertSame(0, OrganizationMember::withoutGlobalScopes()->where('user_id', $user->id)->count());
+        $member = OrganizationMember::withoutGlobalScopes()->where('user_id', $user->id)->firstOrFail();
+        $this->assertSame('owner', $member->role->value);
+        $this->assertSame('solo', \App\Models\Organization::findOrFail($member->organization_id)->mode);
 
-        // With no company yet they are asked to wait for an invitation, not shown an error.
-        $this->get(route('dashboard'))->assertRedirect(route('onboarding.index'));
-        $this->get(route('onboarding.index'))->assertOk()->assertSee('Waiting for an invitation');
+        $this->get(route('dashboard'))->assertOk()->assertSee('Good')->assertSee('Add client');
         $this->get(route('profile.edit'))->assertOk()->assertSee('Professional');
+    }
+
+    public function test_a_freelancer_invited_by_a_company_does_not_get_a_second_workspace(): void
+    {
+        $owner = $this->userWithWorkspace('Olive');
+        $this->actingAs($owner)->post(route('team.invite'), ['email' => 'fay@example.com', 'kind' => 'freelancer'])->assertRedirect();
+        $invitation = \App\Models\Invitation::withoutGlobalScopes()->firstOrFail();
+        auth()->logout();
+
+        $this->get(route('invite.show', $invitation->token))->assertOk();
+        $this->post('/register', [
+            'account_type' => 'freelancer', 'name' => 'Fay Free', 'email' => 'fay@example.com',
+            'password' => 'long-enough-1', 'password_confirmation' => 'long-enough-1',
+        ]);
+        $user = User::where('email', 'fay@example.com')->firstOrFail();
+        $this->assertSame(0, OrganizationMember::withoutGlobalScopes()->where('user_id', $user->id)->count());
+        $this->assertNotNull($user->freelancerProfile);
     }
 
     public function test_files_require_sign_in(): void

@@ -44,11 +44,12 @@ class ProjectController extends Controller
         return view('projects.index', ['projects' => $projects, 'search' => $search, 'status' => $status]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', Project::class);
+        $client = $request->filled('client') ? Client::query()->find($request->query('client')) : null;
 
-        return view('projects.form', $this->formData(new Project(['status' => 'planning', 'currency' => 'INR'])));
+        return view('projects.form', $this->formData(new Project(['status' => 'planning', 'currency' => $client?->default_currency ?: 'INR', 'client_id' => $client?->id])));
     }
 
     public function store(Request $request): RedirectResponse

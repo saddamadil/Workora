@@ -25,7 +25,7 @@ class TeamController extends Controller
         $this->authorize('staff');
         $org = $this->tenancyOrg();
 
-        $members = OrganizationMember::query()->where('status', 'active')->get();
+        $members = OrganizationMember::query()->where('status', 'active')->where('member_type', '!=', 'client')->get();
         $freelancerIds = $members->where('member_type', 'freelancer')->pluck('user_id');
         $withProfile = PayoutMethod::whereIn('user_id', $freelancerIds)->distinct()->pluck('user_id');
 
@@ -63,7 +63,7 @@ class TeamController extends Controller
         }
 
         $type = $request->query('type');
-        $members = OrganizationMember::query()->with('user.freelancerProfile')
+        $members = OrganizationMember::query()->with('user.freelancerProfile')->where('member_type', '!=', 'client')
             ->when($type === 'freelancers', fn ($q) => $q->where('member_type', 'freelancer'))
             ->when($type === 'staff', fn ($q) => $q->where('member_type', 'employee'))
             ->when(trim((string) $request->query('q')) !== '', fn ($q) => $q->whereHas('user', fn ($u) => $u->where('name', 'like', '%'.addcslashes(trim($request->query('q')), '%_\\').'%')))
@@ -86,6 +86,7 @@ class TeamController extends Controller
     public function member(OrganizationMember $member): View
     {
         $this->authorize('staff');
+        abort_if($member->role->isClient(), 404);
         $member->load('user.freelancerProfile');
         $profile = $member->user->freelancerProfile;
         $money = Gate::allows('see-money');
@@ -116,7 +117,7 @@ class TeamController extends Controller
 
         return view('team.roles', [
             'matrix' => \App\Support\Permissions::matrix(),
-            'roles' => OrganizationRole::cases(),
+            'roles' => array_values(array_filter(OrganizationRole::cases(), fn ($r) => ! $r->isClient())),
             'counts' => OrganizationMember::query()->where('status', 'active')->selectRaw('role, count(*) as n')->groupBy('role')->pluck('n', 'role'),
         ]);
     }
@@ -164,8 +165,8 @@ class TeamController extends Controller
         $company = $tenancy->organization()->name;
 
         try {
-            Mail::raw("{$request->user()->name} invited you to join {$company} on Workora.\n\nOpen this link to accept:\n{$link}\n", fn ($m) => $m
-                ->to($invitation->email)->subject("You're invited to {$company} on Workora"));
+            Mail::raw("{$request->user()->name} invited you to join {$company} on Freelancy.\n\nOpen this link to accept:\n{$link}\n", fn ($m) => $m
+                ->to($invitation->email)->subject("You're invited to {$company} on Freelancy"));
         } catch (\Throwable) {
             // Mail may not be configured yet; the link is shown below either way.
         }
@@ -184,9 +185,10 @@ class TeamController extends Controller
     public function update(Request $request, OrganizationMember $member, Tenancy $tenancy): RedirectResponse
     {
         $this->authorize('manage-team');
+        abort_if($member->role->isClient(), 404);
 
         $data = $request->validate([
-            'role' => ['sometimes', Rule::in(array_map(fn ($r) => $r->value, OrganizationRole::cases()))],
+            'role' => ['sometimes', Rule::in(array_map(fn ($r) => $r->value, array_filter(OrganizationRole::cases(), fn ($r) => ! $r->isClient())))],
             'status' => ['sometimes', 'in:active,on_hold,inactive'],
             'default_rate' => ['nullable', 'numeric', 'min:0'],
             'default_rate_currency' => ['nullable', Rule::in(array_keys(Money::CURRENCIES))],

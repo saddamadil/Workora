@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', 'Sign in · Workora')
+@section('title', 'Sign in · Freelancy')
 @section('content')
 <div class="card p-7">
     <h1 class="text-xl font-bold text-slate-900">Welcome back</h1>

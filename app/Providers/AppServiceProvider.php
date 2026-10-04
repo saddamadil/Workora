@@ -36,7 +36,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Coarse capabilities, all read from App\Support\Permissions.
         $role = fn () => app(Tenancy::class)->role();
-        Gate::define('staff', fn () => $role() !== null && ! $role()->isFreelancer());
+        Gate::define('staff', fn () => $role() !== null && ! $role()->isFreelancer() && ! $role()->isClient());
+        Gate::define('client', fn () => $role()?->isClient() ?? false);
         Gate::define('freelancer', fn () => $role()?->isFreelancer() ?? false);
         foreach (['track-time', 'see-money', 'manage-team', 'manage-clients', 'manage-contracts', 'review-time'] as $ability) {
             Gate::define($ability, fn () => Permissions::allows($ability, $role()));

@@ -9,12 +9,13 @@ use Illuminate\Support\Str;
 
 class Workspaces
 {
-    /** Create a company for a user and make them its owner. */
-    public function createFor(User $user, string $name): Organization
+    /** Create a workspace for a user and make them its owner. Mode 'solo' is a freelancer's own business. */
+    public function createFor(User $user, string $name, string $mode = 'team'): Organization
     {
         $organization = Organization::create([
             'name' => $name,
             'slug' => $this->uniqueSlug($name),
+            'mode' => $mode,
         ]);
 
         OrganizationMember::withoutGlobalScopes()->create([

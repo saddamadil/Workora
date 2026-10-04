@@ -19,7 +19,7 @@ class Organization extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'name', 'legal_name', 'email', 'phone', 'slug', 'logo_path', 'website', 'industry',
+        'name', 'legal_name', 'email', 'phone', 'slug', 'mode', 'logo_path', 'website', 'industry',
         'address_line1', 'address_line2', 'city', 'state', 'postal_code',
         'country_code', 'tax_identifier', 'default_tax_rate',
         'base_currency', 'timezone', 'settings', 'tax_ids',

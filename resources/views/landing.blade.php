@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', 'Workora · Run your freelancers and projects in one place')
+@section('title', 'Freelancy · Run your freelancers and projects in one place')
 @section('width', 'max-w-4xl')
 @section('content')
 <div class="text-center">

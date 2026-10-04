@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', $file->original_name.' · Workora')
+@section('title', $file->original_name.' · Freelancy')
 @section('width', 'max-w-xl')
 @section('content')
 @php [$icon, $tint] = $file->icon(); @endphp
@@ -21,5 +21,5 @@
         @endif
     </div>
 </div>
-<p class="mt-5 text-center text-xs text-slate-400">Shared with <a href="{{ url('/') }}" class="hover:underline">Workora</a></p>
+<p class="mt-5 text-center text-xs text-slate-400">Shared with <a href="{{ url('/') }}" class="hover:underline">Freelancy</a></p>
 @endsection

@@ -46,7 +46,7 @@
     @can('recordPayment', $invoice)
         <div class="card space-y-3 p-5">
             <h2 class="font-semibold text-slate-900">Payment</h2>
-            <p class="text-xs text-slate-500">Workora records payments you have made. It does not move money. Still owed: <strong>{{ money($invoice->outstandingMinor(), $cur) }}</strong></p>
+            <p class="text-xs text-slate-500">Freelancy records payments you have made. It does not move money. Still owed: <strong>{{ money($invoice->outstandingMinor(), $cur) }}</strong></p>
             <form method="POST" action="{{ route('invoices.payments.store', $invoice) }}" class="space-y-3">@csrf
                 <div><label class="label" for="amount">Amount ({{ $cur }})</label><input id="amount" name="amount" type="number" step="0.01" min="0.01" value="{{ old('amount', \App\Support\Money::toInput($invoice->outstandingMinor())) }}" required class="input"></div>
                 <div class="grid grid-cols-2 gap-3">

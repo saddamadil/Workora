@@ -21,7 +21,7 @@ class InvoicePolicy
     {
         $role = $this->tenancy->role();
 
-        return $role !== null && ($role->seesMoney() || $role->isFreelancer());
+        return $role !== null && ! $role->isClient() && ($role->seesMoney() || $this->tenancy->issuesOwnInvoices());
     }
 
     public function view(User $user, Invoice $invoice): bool
@@ -30,6 +30,15 @@ class InvoicePolicy
 
         if ($role === null) {
             return false;
+        }
+
+        // A client sees only invoices addressed to their own client record, and only once sent.
+        if ($role->isClient()) {
+            $clientId = $this->tenancy->clientId();
+
+            return $clientId !== null
+                && $invoice->client_id === $clientId
+                && in_array($invoice->status, ['submitted', 'under_review', 'approved', 'partially_paid', 'paid'], true);
         }
 
         if ($role->isFreelancer()) {
@@ -49,7 +58,7 @@ class InvoicePolicy
     {
         $role = $this->tenancy->role();
 
-        return $role !== null && ($role->isFreelancer() || Permissions::allows('manage-contracts', $role));
+        return $role !== null && ! $role->isClient() && ($this->tenancy->issuesOwnInvoices() || Permissions::allows('manage-contracts', $role));
     }
 
     /** May issue an invoice in this particular freelancer's name. */
@@ -59,7 +68,7 @@ class InvoicePolicy
             return false;
         }
 
-        if ($this->tenancy->isFreelancer()) {
+        if ($this->tenancy->issuesOwnInvoices()) {
             return $freelancerId === $user->id;
         }
 
@@ -80,7 +89,9 @@ class InvoicePolicy
     {
         $role = $this->tenancy->role();
 
+        // In a solo workspace nobody else approves: the client is billed directly.
         return $role !== null
+            && ! $this->tenancy->isSolo()
             && $role->canApprovePayment()
             && in_array($invoice->status, ['submitted', 'under_review'], true)
             && $invoice->user_id !== $user->id
@@ -98,7 +109,7 @@ class InvoicePolicy
 
         return $role !== null
             && $role->canApprovePayment()
-            && in_array($invoice->status, ['approved', 'partially_paid'], true);
+            && in_array($invoice->status, $this->tenancy->isSolo() ? ['submitted', 'approved', 'partially_paid'] : ['approved', 'partially_paid'], true);
     }
 
     public function delete(User $user, Invoice $invoice): bool
