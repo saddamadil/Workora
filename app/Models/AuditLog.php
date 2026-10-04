@@ -22,7 +22,7 @@ class AuditLog extends Model
 
     protected $fillable = [
         'organization_id', 'user_id', 'action', 'auditable_type', 'auditable_id',
-        'old_values', 'new_values', 'ip_address', 'user_agent',
+        'old_values', 'new_values', 'ip_address', 'user_agent', 'project_id', 'client_id',
     ];
 
     protected function casts(): array
@@ -51,9 +51,18 @@ class AuditLog extends Model
     }
 
     /** Record an action. Call this from services, not from model observers. */
+    /**
+     * Record an action. The project and client are picked up from the subject when it has them, so
+     * a project's timeline can be built without every call site spelling them out.
+     */
     public static function record(string $action, ?Model $subject = null, array $changes = []): self
     {
+        $projectId = $changes['project_id'] ?? ($subject instanceof Project ? $subject->id : ($subject?->getAttributes()['project_id'] ?? null));
+        $clientId = $changes['client_id'] ?? ($subject instanceof Client ? $subject->id : ($subject?->getAttributes()['client_id'] ?? null));
+
         return static::create([
+            'project_id' => $projectId,
+            'client_id' => $clientId,
             'user_id' => auth()->id(),
             'action' => $action,
             'auditable_type' => $subject ? $subject::class : null,

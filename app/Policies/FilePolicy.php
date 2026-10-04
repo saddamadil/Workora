@@ -24,6 +24,11 @@ class FilePolicy
             return false;
         }
 
+        // Client logins reach their files through the portal only, never through this policy.
+        if ($this->role()->isClient()) {
+            return false;
+        }
+
         if (! $this->role()->isFreelancer()) {
             return true;
         }
@@ -34,7 +39,7 @@ class FilePolicy
 
     public function create(User $user): bool
     {
-        return $this->role() !== null && $this->role() !== OrganizationRole::Viewer;
+        return $this->role() !== null && ! $this->role()->isClient() && $this->role() !== OrganizationRole::Viewer;
     }
 
     public function update(User $user, File $file): bool

@@ -19,7 +19,7 @@ class Project extends Model
     protected $fillable = [
         'organization_id', 'client_id', 'name', 'slug', 'description', 'status',
         'start_date', 'deadline', 'budget_minor', 'currency',
-        'project_manager_id', 'created_by',
+        'project_manager_id', 'created_by', 'billing_model', 'priority', 'tags', 'share_hours',
     ];
 
     protected function casts(): array
@@ -28,6 +28,7 @@ class Project extends Model
             'start_date' => 'date',
             'deadline' => 'date',
             'budget_minor' => 'integer',
+            'share_hours' => 'boolean',
         ];
     }
 
@@ -73,7 +74,9 @@ class Project extends Model
     }
 
     /** Used by ProjectPolicy to decide whether a non-privileged user can see this. */
-    public const STATUSES = ['planning', 'active', 'on_hold', 'completed', 'cancelled'];
+    public const STATUSES = ['planning', 'active', 'on_hold', 'review', 'revision_requested', 'completed', 'cancelled'];
+
+    public const STATUS_LABELS = ['planning' => 'Planning', 'active' => 'Active', 'on_hold' => 'On hold', 'review' => 'In review', 'revision_requested' => 'Revision requested', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
 
     /** Projects this person may see: everything for finance/admin roles, else where they are a member. */
     public function scopeVisibleTo($query, User $user)
@@ -97,6 +100,29 @@ class Project extends Model
         $id = $user instanceof User ? $user->id : $user;
 
         return $this->members()->where('user_id', $id)->exists();
+    }
+
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(ProjectMilestone::class)->orderBy('position');
+    }
+
+    public function deliverables(): HasMany
+    {
+        return $this->hasMany(Deliverable::class)->latest('submitted_at');
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /** 0 to 100, from approved tasks. */
+    public function progressPercent(): int
+    {
+        $total = $this->tasks()->where('status', '!=', 'cancelled')->count();
+
+        return $total ? (int) round($this->tasks()->where('status', 'approved')->count() / $total * 100) : 0;
     }
 
     public function isActive(): bool

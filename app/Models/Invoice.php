@@ -41,7 +41,7 @@ class Invoice extends Model
     protected $fillable = [
         'organization_id', 'user_id', 'contract_id', 'number', 'issue_date', 'due_date',
         'currency', 'subtotal_minor', 'tax_rate', 'tax_minor', 'total_minor',
-        'invoice_type', 'bill_to_type', 'client_id', 'prepared_by', 'payout_method_id',
+        'invoice_type', 'bill_to_type', 'client_id', 'project_id', 'prepared_by', 'payout_method_id',
         'service_period_start', 'service_period_end', 'payment_terms', 'template',
         'tax_treatment', 'tax_lines', 'place_of_supply', 'sac_code',
         'exchange_rate', 'inr_equivalent_minor', 'lut_reference', 'fiscal_year', 'sequence', 'sent_at', 'snapshot',

@@ -7,6 +7,11 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\MilestoneController;
+use App\Http\Controllers\PortalFileController;
+use App\Http\Controllers\ProjectFileController;
+use App\Http\Controllers\RequestController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationSwitchController;
@@ -61,11 +66,51 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [PortalController::class, 'dashboard'])->name('dashboard');
         Route::get('/projects', [PortalController::class, 'projects'])->name('projects');
         Route::get('/projects/{project}', [PortalController::class, 'project'])->name('project');
+        Route::get('/tasks', [PortalController::class, 'tasks'])->name('tasks');
         Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
         Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
         Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
         Route::post('/profile', [PortalController::class, 'updateProfile'])->name('profile.update');
+
+        Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+        Route::get('/messages/poll', [MessageController::class, 'poll'])->name('messages.poll');
+        Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+        Route::post('/messages/typing', [MessageController::class, 'typing'])->name('messages.typing');
+        Route::post('/messages/{message}/important', [MessageController::class, 'important'])->name('messages.important');
+        Route::post('/messages/{message}/request', [MessageController::class, 'toRequest'])->name('messages.to-request');
+
+        Route::get('/files', [PortalFileController::class, 'index'])->name('files.index');
+        Route::post('/files', [PortalFileController::class, 'store'])->name('files.store');
+        Route::get('/files/{file}', [PortalFileController::class, 'show'])->name('files.show');
+        Route::get('/files/{file}/download', [PortalFileController::class, 'download'])->name('files.download');
+
+        Route::get('/requests', [RequestController::class, 'portalIndex'])->name('requests.index');
+        Route::get('/requests/new', [RequestController::class, 'portalCreate'])->name('requests.create');
+        Route::post('/requests', [RequestController::class, 'portalStore'])->name('requests.store');
+        Route::get('/requests/{clientRequest}', [RequestController::class, 'portalShow'])->name('requests.show');
     });
+
+    // Staff side of the same features.
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/poll', [MessageController::class, 'poll'])->name('messages.poll');
+    Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::post('/messages/typing', [MessageController::class, 'typing'])->name('messages.typing');
+    Route::post('/messages/{message}/important', [MessageController::class, 'important'])->name('messages.important');
+    Route::post('/messages/{message}/task', [MessageController::class, 'toTask'])->name('messages.to-task');
+
+    Route::post('/projects/{project}/files', [ProjectFileController::class, 'storeForProject'])->name('projects.files.store');
+    Route::post('/clients/{client}/files', [ProjectFileController::class, 'storeForClient'])->name('clients.files.store');
+    Route::post('/files/{file}/client', [ProjectFileController::class, 'toggleClient'])->name('files.toggle-client');
+
+    Route::post('/projects/{project}/milestones', [MilestoneController::class, 'store'])->name('projects.milestones.store');
+    Route::patch('/milestones/{milestone}', [MilestoneController::class, 'update'])->name('milestones.update');
+    Route::delete('/milestones/{milestone}', [MilestoneController::class, 'destroy'])->name('milestones.destroy');
+
+    Route::get('/requests', [RequestController::class, 'index'])->name('requests.index');
+    Route::get('/requests/{clientRequest}', [RequestController::class, 'show'])->name('requests.show');
+    Route::post('/requests/{clientRequest}/respond', [RequestController::class, 'respond'])->name('requests.respond');
+    Route::post('/requests/{clientRequest}/task', [RequestController::class, 'toTask'])->name('requests.to-task');
+    Route::post('/requests/{clientRequest}/project', [RequestController::class, 'toProject'])->name('requests.to-project');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::get('/team/members', [TeamController::class, 'members'])->name('team.members');
@@ -94,6 +139,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
     Route::post('/tasks/{task}/start', [TaskController::class, 'start'])->name('tasks.start');
+    Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
     Route::post('/tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');
     Route::post('/tasks/{task}/review', [TaskController::class, 'review'])->name('tasks.review');
     Route::post('/tasks/{task}/cancel', [TaskController::class, 'cancel'])->name('tasks.cancel');

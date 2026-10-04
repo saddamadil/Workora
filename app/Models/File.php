@@ -20,12 +20,12 @@ class File extends Model
     protected $fillable = [
         'organization_id', 'project_id', 'attachable_type', 'attachable_id',
         'folder', 'original_name', 'path', 'disk', 'mime_type', 'size_bytes',
-        'checksum', 'version', 'replaces_file_id', 'visibility', 'uploaded_by',
+        'checksum', 'version', 'replaces_file_id', 'visibility', 'uploaded_by', 'client_id', 'visible_to_client',
     ];
 
     protected function casts(): array
     {
-        return ['size_bytes' => 'integer', 'version' => 'integer'];
+        return ['size_bytes' => 'integer', 'version' => 'integer', 'visible_to_client' => 'boolean'];
     }
 
     /** Freelancers see their own uploads and files on projects they belong to. */

@@ -14,6 +14,7 @@ use App\Support\Money;
 use App\Support\Tenancy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -62,6 +63,8 @@ class ProjectController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        \App\Models\AuditLog::record('project.created', $project, ['project_id' => $project->id, 'client_id' => $project->client_id]);
+
         // The creator and the manager must be able to see what they just made.
         foreach (array_unique(array_filter([$request->user()->id, $project->project_manager_id])) as $userId) {
             ProjectMember::firstOrCreate(['project_id' => $project->id, 'user_id' => $userId], ['role_in_project' => 'manager', 'can_view_budget' => true]);
@@ -70,10 +73,13 @@ class ProjectController extends Controller
         return redirect()->route('projects.show', $project)->with('status', 'Project created. Add your team and tasks next.');
     }
 
+    public const TABS = ['overview' => 'Overview', 'tasks' => 'Tasks', 'files' => 'Files', 'worklog' => 'Work log', 'milestones' => 'Milestones', 'invoices' => 'Invoices', 'activity' => 'Activity'];
+
     public function show(Request $request, Project $project): View
     {
         $this->authorize('view', $project);
         $user = $request->user();
+        $tab = array_key_exists($request->query('tab'), self::TABS) ? $request->query('tab') : 'overview';
 
         $tasks = $project->tasks()->visibleTo($user)->with('assignees:id,name')->orderBy('position')->orderBy('created_at')->get();
         $columns = [
@@ -87,24 +93,51 @@ class ProjectController extends Controller
         $minutes = (int) TimeEntry::query()->where('project_id', $project->id)
             ->when($this->isFreelancer(), fn ($q) => $q->where('user_id', $user->id))->sum('minutes');
         $financials = $user->can('viewFinancials', $project);
-
         $memberUserIds = $project->members()->pluck('user_id');
+        $project->load('client', 'projectManager');
+        $done = $tasks->where('status', 'approved')->count();
+        $live = $tasks->where('status', '!=', 'cancelled')->count();
 
-        return view('projects.show', [
-            'project' => $project->load('client', 'projectManager'),
+        $data = [
+            'project' => $project,
+            'tab' => $tab,
+            'tabs' => self::TABS,
+            'progress' => $live ? (int) round($done / $live * 100) : 0,
             'tasks' => $tasks,
             'columns' => $columns,
             'members' => $project->members()->with('user:id,name,email')->get(),
             'candidates' => $user->can('manageMembers', $project)
-                ? OrganizationMember::query()->with('user:id,name,email')->where('status', 'active')->whereNotIn('user_id', $memberUserIds)->get()
+                ? OrganizationMember::query()->with('user:id,name,email')->where('status', 'active')->where('member_type', '!=', 'client')->whereNotIn('user_id', $memberUserIds)->get()
                 : collect(),
             'minutes' => $minutes,
             'costMinor' => $financials ? $project->trackedCostMinor() : null,
-            'files' => File::query()->visibleTo($user)->where('project_id', $project->id)->latest()->limit(8)->get(),
             'canEdit' => $user->can('update', $project),
             'canCreateTask' => $user->can('create', Task::class),
             'financials' => $financials,
-        ]);
+            'milestones' => $project->milestones()->get(),
+            'folders' => ProjectFileController::FOLDERS,
+        ];
+
+        if (in_array($tab, ['overview', 'files'], true)) {
+            $data['files'] = File::query()->visibleTo($user)->where('project_id', $project->id)->latest()->limit($tab === 'files' ? 200 : 6)->get();
+        }
+        if ($tab === 'milestones') {
+            $data['deliverables'] = $project->deliverables()->with('reviews.user:id,name', 'submittedBy:id,name', 'files')->get();
+        }
+        if ($tab === 'worklog') {
+            $data['entries'] = TimeEntry::query()->with('user:id,name', 'task:id,title')->where('project_id', $project->id)
+                ->when($this->isFreelancer(), fn ($q) => $q->where('user_id', $user->id))->latest('entry_date')->limit(100)->get();
+        }
+        if ($tab === 'invoices') {
+            $data['invoices'] = Gate::allows('see-money') || app(Tenancy::class)->issuesOwnInvoices()
+                ? \App\Models\Invoice::query()->where(fn ($q) => $q->where('project_id', $project->id))->latest('issue_date')->get()
+                : collect();
+        }
+        if (in_array($tab, ['overview', 'activity'], true)) {
+            $data['activity'] = \App\Models\AuditLog::query()->with('user:id,name')->where('project_id', $project->id)->latest('created_at')->limit($tab === 'activity' ? 100 : 6)->get();
+        }
+
+        return view('projects.show', $data);
     }
 
     public function edit(Project $project): View
@@ -180,7 +213,14 @@ class ProjectController extends Controller
             'budget' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', Rule::in(array_keys(Money::CURRENCIES))],
             'project_manager_id' => ['nullable', 'uuid'],
+            'billing_model' => ['nullable', Rule::in(['hourly', 'fixed', 'recurring'])],
+            'priority' => ['nullable', Rule::in(['low', 'medium', 'high', 'urgent'])],
+            'tags' => ['nullable', 'string', 'max:200'],
+            'share_hours' => ['sometimes', 'boolean'],
         ]);
+        $data['share_hours'] = $request->boolean('share_hours');
+        $data['billing_model'] = $data['billing_model'] ?? 'hourly';
+        $data['priority'] = $data['priority'] ?? 'medium';
 
         if (! empty($data['project_manager_id'])) {
             abort_unless(OrganizationMember::where('user_id', $data['project_manager_id'])->where('member_type', 'employee')->where('status', 'active')->exists(), 422, 'The manager must be a member of your team.');

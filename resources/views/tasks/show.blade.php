@@ -114,7 +114,9 @@
             @if (Route::has('time.start') && Gate::allows('track-time') && ! $task->isClosed())
                 <form method="POST" action="{{ route('time.start') }}">@csrf<input type="hidden" name="task_id" value="{{ $task->id }}"><button class="btn-secondary w-full"><i class="bi bi-stopwatch"></i> Start timer</button></form>
             @endif
-            @if ($task->canBeSubmitted())
+            @if ($org->mode === 'solo' && ! $task->isClosed())
+                <form method="POST" action="{{ route('tasks.complete', $task) }}">@csrf<button class="btn-primary w-full"><i class="bi bi-check2-circle"></i> Mark as complete</button></form>
+            @elseif ($task->canBeSubmitted())
                 <form method="POST" action="{{ route('tasks.submit', $task) }}" enctype="multipart/form-data" class="space-y-3 border-t border-slate-100 pt-3">@csrf
                     <label class="label" for="note">Hand in your work</label>
                     <textarea id="note" name="note" rows="3" required class="input" placeholder="What did you do? Anything the reviewer should check?"></textarea>

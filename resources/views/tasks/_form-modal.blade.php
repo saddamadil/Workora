@@ -12,11 +12,15 @@
             <div><label class="label" for="t-est">Estimated hours</label><input id="t-est" type="number" step="0.25" min="0" name="estimated_hours" class="input"></div>
             @if (Gate::allows('see-money'))<div><label class="label" for="t-bud">Task budget ({{ $project->currency }})</label><input id="t-bud" type="number" step="0.01" min="0" name="budget" class="input"></div>@endif
         </div>
+        @if (($milestones ?? collect())->isNotEmpty())<div><label class="label" for="t-ms">Milestone</label><select id="t-ms" name="milestone_id" class="input"><option value="">None</option>@foreach ($milestones as $ms)<option value="{{ $ms->id }}">{{ $ms->title }}</option>@endforeach</select></div>@endif
+        @if ($project->client_id)<label class="flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" name="is_internal" value="1" class="mt-1 rounded border-slate-300"> <span>Keep this task private<span class="block text-xs text-slate-500">Hidden from the client's portal.</span></span></label>@endif
+        @if ($org->mode !== 'solo')
         <fieldset><legend class="label">Assign to</legend>
             <div class="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2">
                 @forelse ($people as $u)<label class="flex items-center gap-2 rounded-lg px-2 py-1 text-sm hover:bg-slate-50"><input type="checkbox" name="assignee_ids[]" value="{{ $u->id }}" class="rounded border-slate-300"> {{ $u->name }}</label>
                 @empty<p class="p-2 text-sm text-slate-500">Add people to the project first.</p>@endforelse
             </div></fieldset>
+        @endif
         <button class="btn-primary w-full">Create task</button>
     </form>
 </div>

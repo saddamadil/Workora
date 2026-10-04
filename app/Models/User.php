@@ -23,7 +23,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'avatar_path', 'phone',
-        'country_code', 'timezone', 'locale',
+        'country_code', 'timezone', 'locale', 'last_seen_at', 'notification_prefs', 'dashboard_widgets',
     ];
 
     protected $hidden = [
@@ -36,6 +36,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'last_seen_at' => 'datetime',
+            'notification_prefs' => 'array',
+            'dashboard_widgets' => 'array',
             'password' => 'hashed',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted',

@@ -11,7 +11,7 @@
         <input type="search" name="q" value="{{ $search }}" placeholder="Search projects" class="input pl-10" aria-label="Search projects"></div>
     <select name="status" class="input sm:w-48" onchange="this.form.submit()" aria-label="Status">
         <option value="">All statuses</option>
-        @foreach (\App\Models\Project::STATUSES as $s)<option value="{{ $s }}" @selected($status === $s)>{{ ucfirst(str_replace('_', ' ', $s)) }}</option>@endforeach
+        @foreach (\App\Models\Project::STATUSES as $s)<option value="{{ $s }}" @selected($status === $s)>{{ \App\Models\Project::STATUS_LABELS[$s] }}</option>@endforeach
     </select>
 </form>
 
@@ -28,7 +28,7 @@
             <a href="{{ route('projects.show', $p) }}" class="card block p-5 transition hover:border-brand-500">
                 <div class="flex items-start justify-between gap-2">
                     <h2 class="truncate font-semibold text-slate-900">{{ $p->name }}</h2>
-                    <x-pill :tone="$statusTone[$p->status] ?? 'slate'">{{ ucfirst(str_replace('_', ' ', $p->status)) }}</x-pill>
+                    <x-pill :tone="$statusTone[$p->status] ?? 'slate'">{{ \App\Models\Project::STATUS_LABELS[$p->status] ?? $p->status }}</x-pill>
                 </div>
                 <p class="mt-0.5 truncate text-sm text-slate-500">{{ $p->client?->name ?? 'No client' }}</p>
                 <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand-600" style="width: {{ $pct }}%"></div></div>

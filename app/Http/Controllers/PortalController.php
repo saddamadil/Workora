@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Client;
+use App\Models\File;
 use App\Models\Invoice;
 use App\Models\OrganizationMember;
 use App\Models\Project;
@@ -21,6 +22,9 @@ use Illuminate\View\View;
 class PortalController extends Controller
 {
     private const OPEN = ['submitted', 'under_review', 'approved', 'partially_paid'];
+
+    /** Audit entries a client may see on a project timeline. Nothing internal. */
+    private const CLIENT_VISIBLE_ACTIONS = ['project.created', 'file.shared', 'milestone.completed', 'invoice.sent', 'deliverable.submitted', 'deliverable.approved', 'deliverable.changes_requested', 'request.created', 'request.accepted', 'request.completed'];
 
     public function __construct(private Tenancy $tenancy) {}
 
@@ -74,19 +78,38 @@ class PortalController extends Controller
         return view('portal.projects', ['projects' => $this->withProgress($projects)]);
     }
 
-    public function project(Project $project): View
+    public function tasks(): View
+    {
+        $client = $this->client();
+        $projects = Project::query()->where('client_id', $client->id)->get(['id', 'name', 'slug']);
+        $tasks = Task::query()->whereIn('project_id', $projects->pluck('id'))->where('is_internal', false)->where('status', '!=', 'cancelled')
+            ->orderByRaw('due_at is null')->orderBy('due_at')->get(['id', 'project_id', 'title', 'status', 'due_at', 'priority']);
+
+        return view('portal.tasks', ['projects' => $projects->keyBy('id'), 'tasks' => $tasks->groupBy('project_id')]);
+    }
+
+    public function project(Request $request, Project $project): View
     {
         $client = $this->client();
         abort_unless($project->client_id === $client->id, 404);
+        $tab = in_array($request->query('tab'), ['overview', 'tasks', 'files', 'milestones', 'activity'], true) ? $request->query('tab') : 'overview';
 
-        $tasks = Task::query()->where('project_id', $project->id)->where('status', '!=', 'cancelled')->orderByRaw('due_at is null')->orderBy('due_at')->get(['id', 'title', 'status', 'due_at']);
+        $tasks = Task::query()->where('project_id', $project->id)->where('is_internal', false)->where('status', '!=', 'cancelled')->orderByRaw('due_at is null')->orderBy('due_at')->get(['id', 'title', 'status', 'due_at']);
         $done = $tasks->where('status', 'approved')->count();
 
+        $hours = $project->share_hours ? (int) \App\Models\TimeEntry::query()->where('project_id', $project->id)->where('is_billable', true)->sum('minutes') : null;
+
         return view('portal.project', [
-            'project' => $project->only(['id', 'name', 'description', 'status', 'start_date', 'deadline']) + ['start_date' => $project->start_date, 'deadline' => $project->deadline],
+            'project' => $project,
+            'tab' => $tab,
             'tasks' => $tasks,
             'progress' => $tasks->count() ? (int) round($done / $tasks->count() * 100) : 0,
             'done' => $done,
+            'hours' => $hours,
+            'milestones' => $project->milestones()->get(),
+            'deliverables' => $project->deliverables()->with('reviews.user:id,name', 'files')->get(),
+            'files' => File::query()->where('client_id', $client->id)->where('project_id', $project->id)->where('visible_to_client', true)->latest()->get(),
+            'activity' => $tab === 'activity' ? AuditLog::query()->with('user:id,name')->where('project_id', $project->id)->whereIn('action', self::CLIENT_VISIBLE_ACTIONS)->latest('created_at')->limit(60)->get() : collect(),
         ]);
     }
 

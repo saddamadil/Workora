@@ -94,7 +94,7 @@
         <a href="{{ route('projects.show', $p) }}" class="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-slate-50">
             <div class="min-w-0 flex-1"><div class="font-semibold text-slate-900">{{ $p->name }}</div><div class="text-sm text-slate-500">{{ $p->tasks_done }} of {{ $p->tasks_total }} tasks done @if ($p->deadline)· due {{ $p->deadline->format('d M Y') }}@endif</div></div>
             <div class="w-28"><div class="h-1.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand-500" style="width: {{ $pct }}%"></div></div></div>
-            <x-pill :tone="$p->status === 'active' ? 'green' : 'slate'">{{ ucfirst(str_replace('_', ' ', $p->status)) }}</x-pill>
+            <x-pill :tone="$p->status === 'active' ? 'green' : 'slate'">{{ \App\Models\Project::STATUS_LABELS[$p->status] ?? $p->status }}</x-pill>
         </a>
     @empty
         <div class="px-5 py-10 text-center text-sm text-slate-500">Projects keep this client's work organized.

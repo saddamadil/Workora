@@ -42,7 +42,7 @@ class Task extends Model
         'organization_id', 'project_id', 'parent_task_id', 'title', 'description',
         'status', 'priority', 'start_date', 'due_at',
         'estimated_hours', 'actual_hours', 'budget_minor', 'currency',
-        'created_by', 'approved_by', 'approved_at', 'position',
+        'created_by', 'approved_by', 'approved_at', 'position', 'is_internal', 'milestone_id',
     ];
 
     protected function casts(): array
@@ -55,6 +55,7 @@ class Task extends Model
             'actual_hours' => 'decimal:2',
             'budget_minor' => 'integer',
             'position' => 'integer',
+            'is_internal' => 'boolean',
         ];
     }
 

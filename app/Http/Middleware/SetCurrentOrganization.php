@@ -54,6 +54,12 @@ class SetCurrentOrganization
             return redirect()->route('onboarding.index');
         }
 
+        // "Online now" for messaging: touch at most once a minute, without bumping updated_at.
+        $seen = $user->getAttributes()['last_seen_at'] ?? null;
+        if ($seen === null || \Illuminate\Support\Carbon::parse($seen)->lt(now()->subSeconds(60))) {
+            \App\Models\User::query()->whereKey($user->id)->toBase()->update(['last_seen_at' => now()]);
+        }
+
         $this->tenancy->set($membership->organization, $membership);
         $request->session()->put('current_organization_id', $membership->organization_id);
 

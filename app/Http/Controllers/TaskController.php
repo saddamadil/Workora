@@ -112,6 +112,19 @@ class TaskController extends Controller
         return redirect()->route('projects.show', $project)->with('status', 'Task deleted.');
     }
 
+    /** On a solo workspace there is nobody to review the work, so the freelancer marks it done. */
+    public function complete(Request $request, Task $task): RedirectResponse
+    {
+        abort_unless(app(Tenancy::class)->isSolo(), 403);
+        $this->authorize('update', $task);
+        abort_if(in_array($task->status, ['approved', 'cancelled'], true), 422, 'This task is already closed.');
+
+        $task->update(['status' => 'approved', 'approved_by' => $request->user()->id, 'approved_at' => now()]);
+        \App\Models\AuditLog::record('task.completed', $task, ['project_id' => $task->project_id]);
+
+        return back()->with('status', 'Task completed.');
+    }
+
     /** The assignee begins work. */
     public function start(Task $task): RedirectResponse
     {
@@ -306,10 +319,19 @@ class TaskController extends Controller
             'budget' => ['nullable', 'numeric', 'min:0'],
             'assignee_ids' => ['nullable', 'array', 'max:20'],
             'assignee_ids.*' => ['uuid'],
+            'is_internal' => ['sometimes', 'boolean'],
+            'milestone_id' => ['nullable', 'uuid'],
         ]);
+        if (! empty($data['milestone_id'])) {
+            \App\Models\ProjectMilestone::query()->where('project_id', $project->id)->findOrFail($data['milestone_id']);
+        }
 
         // Only people on the project can be given its tasks.
         $assignees = array_values(array_unique($data['assignee_ids'] ?? []));
+        // On their own, a freelancer is the only person who can do the work.
+        if (! $assignees && app(Tenancy::class)->isSolo()) {
+            $assignees = [$request->user()->id];
+        }
         $members = ProjectMember::where('project_id', $project->id)->whereIn('user_id', $assignees)->pluck('user_id')->all();
         abort_unless(count($members) === count($assignees), 422, 'Add people to the project before assigning them tasks.');
 
@@ -322,6 +344,8 @@ class TaskController extends Controller
                 'due_at' => $data['due_at'] ?? null,
                 'estimated_hours' => $data['estimated_hours'] ?? null,
                 'budget_minor' => Money::toMinor($data['budget'] ?? null),
+                'is_internal' => $request->boolean('is_internal'),
+                'milestone_id' => $data['milestone_id'] ?? null,
             ],
         ];
     }
