@@ -33,8 +33,19 @@ Built on Laravel 13, Tailwind CSS 4, Alpine.js and Bootstrap Icons. SQLite, MySQ
   sent invoices, with PDF download. Adding the same client twice is blocked.
 - Client logins are confined to the portal in one place (`SetCurrentOrganization::CLIENT_ROUTES`);
   portal queries are pinned to the client's record and select only client-safe fields.
-- Not built yet, shown as "Soon" in the interface: messages, requests, client file sharing, online
-  payment, calendar, reports, notifications, global search.
+- Per-project messaging (replies, attachments, important flag, search, unread counts, typing and
+  online status by polling), message to task (freelancer) and message to request (client).
+- Project workspace tabs: overview, tasks, files (private until shared), work log, milestones with
+  deliverables for client approval or change requests, invoices, activity timeline.
+- Client requests (accept, decline, discuss, convert to task or project), calendar (month, week, day,
+  agenda), notifications in the app and by email with per-type preferences, daily reminders.
+- Payments: clients see what is due, pay by the details or payment link shown, tell the freelancer
+  with a reference, and get a PDF receipt once it is confirmed. Freelancy records payments; it does
+  not take card payments or move money.
+- Reports, global search (Ctrl or Cmd + K), dashboard widgets, setup wizard, help, password reset,
+  email verification (encouraged, not required), and five interface languages for menus and labels.
+- Not built yet: online card payments, two-factor sign-in, other-device sign-out, full translation of
+  every screen and a fully mirrored right-to-left layout.
 
 **Team, profiles and invoicing**
 
@@ -110,6 +121,12 @@ scripts/                build-deploy.sh (upload package), export-schema.sh (MySQ
   immutable, and invoiced time entries are locked.
 - **Invoice numbers are per freelancer and financial year** (`INV-2026-27-001` for India's April to
   March year, calendar year elsewhere); contract references are per company.
+
+## Running it on a server
+
+- Run `php artisan schedule:run` every minute (a Hostinger Cron Job) for the daily due-date reminders.
+- Set `MAIL_MAILER` and the SMTP settings in `.env` or invitations, reset links and email
+  notifications are only written to the log.
 
 ## Not built yet
 

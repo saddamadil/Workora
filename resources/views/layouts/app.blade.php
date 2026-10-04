@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body x-data="{ nav: false, create: false }"
+<body x-data="{ nav: false, create: false, search: false }"
+      @keydown.window.prevent.ctrl.k="search = true; $nextTick(() => $refs.q && $refs.q.focus())"
+      @keydown.window.prevent.meta.k="search = true; $nextTick(() => $refs.q && $refs.q.focus())"
       @keydown.window="if (!['INPUT','TEXTAREA','SELECT'].includes($event.target.tagName) && !$event.target.isContentEditable && !$event.metaKey && !$event.ctrlKey && !$event.altKey && $event.key === 'n') { $event.preventDefault(); create = true }"
       class="min-h-screen">
 @php
@@ -25,43 +27,44 @@
     if ($isClient) {
         $sections = ['' => [
             ['portal.dashboard', 'bi-grid-1x2', 'Dashboard', 'portal.dashboard', true],
-            ['portal.projects', 'bi-kanban', 'Our projects', 'portal.projects', true],
-            ['portal.tasks', 'bi-check2-square', 'Our tasks', 'portal.tasks', true],
-            ['portal.messages.index', 'bi-chat-dots', 'Messages', 'portal.messages', true],
-            ['portal.requests.index', 'bi-inbox', 'Requests', 'portal.requests', true],
-            ['portal.files.index', 'bi-folder2-open', 'Files', 'portal.files', true],
-            ['portal.calendar.index', 'bi-calendar3', 'Calendar', 'portal.calendar', true],
-            ['portal.invoices', 'bi-receipt', 'Invoices', 'portal.invoices', true],
-            [null, 'bi-cash-coin', 'Payments', '', true],
-            ['portal.profile', 'bi-person-circle', 'Profile', 'portal.profile', true],
-            [null, 'bi-building', 'Company', '', true],
-            [null, 'bi-life-preserver', 'Help', '', true],
+            ['portal.projects', 'bi-kanban', __('ui.our_projects'), 'portal.projects', true],
+            ['portal.tasks', 'bi-check2-square', __('ui.our_tasks'), 'portal.tasks', true],
+            ['portal.messages.index', 'bi-chat-dots', __('ui.messages'), 'portal.messages', true],
+            ['portal.requests.index', 'bi-inbox', __('ui.requests'), 'portal.requests', true],
+            ['portal.files.index', 'bi-folder2-open', __('ui.files'), 'portal.files', true],
+            ['portal.calendar.index', 'bi-calendar3', __('ui.calendar'), 'portal.calendar', true],
+            ['portal.invoices', 'bi-receipt', __('ui.invoices'), 'portal.invoices', true],
+            ['portal.payments', 'bi-cash-coin', __('ui.payments'), 'portal.payments', true],
+            ['portal.profile', 'bi-person-circle', __('ui.profile'), 'portal.profile', true],
+            ['portal.company', 'bi-building', __('ui.company'), 'portal.company', true],
+            ['settings.index', 'bi-gear', __('ui.settings'), 'settings.index', true],
+            ['help', 'bi-life-preserver', __('ui.help'), 'help', true],
         ]];
     } elseif ($isSolo) {
         $sections = ['' => [
-            ['dashboard', 'bi-grid-1x2', 'Dashboard', 'dashboard', true],
-            ['clients.index', 'bi-people', 'My clients', 'clients', true],
-            ['projects.index', 'bi-kanban', 'My projects', 'projects', true],
-            ['tasks.index', 'bi-check2-square', 'My tasks', 'tasks', true],
-            ['messages.index', 'bi-chat-dots', 'Messages', 'messages', true],
-            ['requests.index', 'bi-inbox', 'Requests', 'requests', true],
-            ['files.index', 'bi-folder2-open', 'Files', 'files', true],
-            ['time.index', 'bi-stopwatch', 'My work', 'time', $has('time.index')],
-            ['invoices.index', 'bi-receipt', 'My invoices', 'invoices', true],
-            ['payments.index', 'bi-cash-coin', 'Payments', 'payments', $has('payments.index')],
-            ['calendar.index', 'bi-calendar3', 'Calendar', 'calendar', true],
-            [null, 'bi-bar-chart', 'Reports', '', true],
-            ['profile.edit', 'bi-person-circle', 'Profile', 'profile', true],
-            ['team.payment-profiles', 'bi-bank', 'Payment profiles', 'team', true],
-            ['settings.company', 'bi-gear', 'Settings', 'settings', Gate::allows('manage-team')],
-            [null, 'bi-life-preserver', 'Help', '', true],
+            ['dashboard', 'bi-grid-1x2', __('ui.dashboard'), 'dashboard', true],
+            ['clients.index', 'bi-people', __('ui.my_clients'), 'clients', true],
+            ['projects.index', 'bi-kanban', __('ui.my_projects'), 'projects', true],
+            ['tasks.index', 'bi-check2-square', __('ui.my_tasks'), 'tasks', true],
+            ['messages.index', 'bi-chat-dots', __('ui.messages'), 'messages', true],
+            ['requests.index', 'bi-inbox', __('ui.requests'), 'requests', true],
+            ['files.index', 'bi-folder2-open', __('ui.files'), 'files', true],
+            ['time.index', 'bi-stopwatch', __('ui.my_work'), 'time', $has('time.index')],
+            ['invoices.index', 'bi-receipt', __('ui.my_invoices'), 'invoices', true],
+            ['payments.index', 'bi-cash-coin', __('ui.payments'), 'payments', $has('payments.index')],
+            ['calendar.index', 'bi-calendar3', __('ui.calendar'), 'calendar', true],
+            ['reports.index', 'bi-bar-chart', __('ui.reports'), 'reports', true],
+            ['profile.edit', 'bi-person-circle', __('ui.profile'), 'profile', true],
+            ['team.payment-profiles', 'bi-bank', __('ui.payment_profiles'), 'team', true],
+            ['settings.index', 'bi-gear', __('ui.settings'), 'settings', true],
+            ['help', 'bi-life-preserver', __('ui.help'), 'help', true],
         ]];
     } else {
         $sections = [
             'Work' => [
-                ['dashboard', 'bi-grid-1x2', 'Dashboard', 'dashboard', true],
-                ['projects.index', 'bi-kanban', $isFreelancer ? 'My projects' : 'Projects', 'projects', true],
-                ['tasks.index', 'bi-check2-square', $isFreelancer ? 'My tasks' : 'Tasks', 'tasks', true],
+                ['dashboard', 'bi-grid-1x2', __('ui.dashboard'), 'dashboard', true],
+                ['projects.index', 'bi-kanban', $isFreelancer ? __('ui.my_projects') : 'Projects', 'projects', true],
+                ['tasks.index', 'bi-check2-square', $isFreelancer ? __('ui.my_tasks') : 'Tasks', 'tasks', true],
                 ['time.index', 'bi-stopwatch', 'Time', 'time', $has('time.index') && Gate::allows('track-time')],
                 ['work-requests.index', 'bi-lightbulb', $isFreelancer ? 'My proposals' : 'Proposals', 'work-requests', $has('work-requests.index')],
             ],
@@ -74,7 +77,7 @@
                 ['contracts.index', 'bi-file-earmark-ruled', 'Contracts', 'contracts', $has('contracts.index') && ($isFreelancer || Gate::allows('see-money'))],
                 ['timesheets.index', 'bi-calendar-check', 'Timesheets', 'timesheets', $has('timesheets.index') && Gate::allows('review-time')],
                 ['invoices.index', 'bi-receipt', 'Invoices', 'invoices', $has('invoices.index') && ($isFreelancer || Gate::allows('see-money'))],
-                ['payments.index', 'bi-cash-coin', $isFreelancer ? 'Earnings' : 'Payments', 'payments', $has('payments.index') && ($isFreelancer || Gate::allows('see-money'))],
+                ['payments.index', 'bi-cash-coin', $isFreelancer ? 'Earnings' : __('ui.payments'), 'payments', $has('payments.index') && ($isFreelancer || Gate::allows('see-money'))],
             ],
             'Files' => [
                 ['files.index', 'bi-folder2-open', 'All files', 'files', true],
@@ -94,11 +97,11 @@
         ['files.index', 'bi-cloud-arrow-up', 'Upload file', true],
     ], fn ($q) => $q[3]);
     $mobile = $isClient
-        ? [['portal.dashboard', 'bi-grid-1x2', 'Home', 'portal.dashboard'], ['portal.projects', 'bi-kanban', 'Projects', 'portal.projects'], ['portal.invoices', 'bi-receipt', 'Invoices', 'portal.invoices']]
+        ? [['portal.dashboard', 'bi-grid-1x2', __('ui.home'), 'portal.dashboard'], ['portal.projects', 'bi-kanban', __('ui.projects'), 'portal.projects'], ['portal.invoices', 'bi-receipt', __('ui.invoices'), 'portal.invoices']]
         : array_values(array_filter([
-            ['dashboard', 'bi-grid-1x2', 'Home', 'dashboard'],
-            $isFreelancer ? ['projects.index', 'bi-kanban', 'Projects', 'projects'] : ['clients.index', 'bi-people', 'Clients', 'clients'],
-            ['invoices.index', 'bi-receipt', 'Invoices', 'invoices'],
+            ['dashboard', 'bi-grid-1x2', __('ui.home'), 'dashboard'],
+            $isFreelancer ? ['projects.index', 'bi-kanban', __('ui.projects'), 'projects'] : ['clients.index', 'bi-people', __('ui.clients'), 'clients'],
+            ['invoices.index', 'bi-receipt', __('ui.invoices'), 'invoices'],
         ], fn ($m) => $has($m[0])));
 @endphp
 
@@ -107,7 +110,8 @@
     <a href="{{ route($isClient ? 'portal.dashboard' : 'dashboard') }}" class="flex items-center gap-2 font-bold text-slate-900">
         <span class="grid size-8 place-items-center rounded-lg bg-slate-900 text-brand-500"><i class="bi bi-lightning-charge-fill"></i></span> Freelancy
     </a>
-    <a href="{{ route('notifications.index') }}" class="relative ml-auto mr-1 grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Notifications"><i class="bi bi-bell text-xl"></i>@if (($unreadNotifications ?? 0) > 0)<span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand-500"></span>@endif</a>
+    <button type="button" @click="search = true; $nextTick(() => $refs.q && $refs.q.focus())" class="ml-auto grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Search"><i class="bi bi-search text-xl"></i></button>
+    <a href="{{ route('notifications.index') }}" class="relative mr-1 grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Notifications"><i class="bi bi-bell text-xl"></i>@if (($unreadNotifications ?? 0) > 0)<span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand-500"></span>@endif</a>
     <button type="button" @click="nav = !nav" class="grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Open menu" :aria-expanded="nav">
         <i class="bi bi-list text-2xl"></i>
     </button>
@@ -120,12 +124,15 @@
             <span class="grid size-9 place-items-center rounded-lg bg-slate-900 text-brand-500"><i class="bi bi-lightning-charge-fill"></i></span> Freelancy
         </a>
 
+        <button type="button" @click="search = true; nav = false; $nextTick(() => $refs.q && $refs.q.focus())" class="mb-2 flex min-h-11 w-full items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50">
+            <i class="bi bi-search text-lg"></i> {{ __('ui.search') }} <kbd class="ml-auto hidden rounded border border-slate-200 px-1.5 text-[11px] lg:inline">Ctrl K</kbd>
+        </button>
         <a href="{{ route('notifications.index') }}" class="mb-2 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 {{ request()->routeIs('notifications.*') ? 'bg-slate-100 text-slate-900' : '' }}">
-            <i class="bi bi-bell text-lg"></i> Notifications @if (($unreadNotifications ?? 0) > 0)<span class="ml-auto rounded-full bg-brand-500 px-2 text-xs font-semibold text-slate-900">{{ $unreadNotifications }}<span class="sr-only"> unread</span></span>@endif
+            <i class="bi bi-bell text-lg"></i> {{ __('ui.notifications') }} @if (($unreadNotifications ?? 0) > 0)<span class="ml-auto rounded-full bg-brand-500 px-2 text-xs font-semibold text-slate-900">{{ $unreadNotifications }}<span class="sr-only"> unread</span></span>@endif
         </a>
 
         @if ($quick)
-            <button type="button" @click="create = true; nav = false" class="btn-primary mb-3 w-full"><i class="bi bi-plus-lg"></i> New <kbd class="ml-1 hidden rounded border border-slate-900/20 px-1.5 text-[11px] font-semibold lg:inline">N</kbd></button>
+            <button type="button" @click="create = true; nav = false" class="btn-primary mb-3 w-full"><i class="bi bi-plus-lg"></i> {{ __('ui.new') }} <kbd class="ml-1 hidden rounded border border-slate-900/20 px-1.5 text-[11px] font-semibold lg:inline">N</kbd></button>
         @endif
 
         @if (($myOrgs ?? collect())->count() > 1)
@@ -196,6 +203,7 @@
 
     <main class="min-w-0 flex-1 px-4 py-6 pb-24 sm:px-8 lg:py-8 lg:pb-8">
         <div class="mx-auto max-w-[1400px]">
+            @if (empty(auth()->user()->getAttributes()['email_verified_at'] ?? null))<div class="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><span>Please verify your email address.</span><form method="POST" action="{{ route('verification.send') }}">@csrf<button class="font-semibold underline">Send me the link</button></form></div>@endif
             @include('partials.flash')
             @yield('content')
         </div>
@@ -213,15 +221,32 @@
         <a href="{{ route($route) }}" @if ($active) aria-current="page" @endif class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium {{ $active ? 'text-slate-900' : 'text-slate-500' }}">
             <i class="bi {{ $icon }} text-xl {{ $active ? 'text-brand-600' : '' }}"></i>{{ $label }}</a>
     @endforeach
-    <button type="button" @click="nav = true" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-slate-500"><i class="bi bi-three-dots text-xl"></i>More</button>
+    <button type="button" @click="nav = true" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-slate-500"><i class="bi bi-three-dots text-xl"></i>{{ __('ui.more') }}</button>
 </nav>
+@endif
+
+{{-- Search: Ctrl or Cmd + K. Results are grouped by kind and limited to what this person may see. --}}
+@if ($org)
+<div x-show="search" x-cloak @keydown.escape.window="search = false" class="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/40 p-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Search"
+     x-data="{ term: '', groups: [], busy: false, t: null, run() { clearTimeout(this.t); if (this.term.trim().length < 2) { this.groups = []; return } this.t = setTimeout(async () => { this.busy = true; const r = await fetch(@js(route('search.index')) + '?q=' + encodeURIComponent(this.term), { headers: { Accept: 'application/json' } }); this.groups = r.ok ? (await r.json()).groups : []; this.busy = false }, 200) } }">
+    <div @click.outside="search = false" class="w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-xl">
+        <div class="flex items-center gap-3 border-b border-slate-200 px-4"><i class="bi bi-search text-slate-400"></i>
+            <input x-ref="q" x-model="term" @input="run()" type="search" placeholder="Search clients, projects, tasks, messages, invoices, files" class="min-h-14 w-full border-0 bg-transparent text-sm focus:outline-none focus:ring-0" aria-label="Search"></div>
+        <div class="max-h-[60vh] overflow-y-auto">
+            <template x-for="g in groups" :key="g.title"><div><div class="bg-slate-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500" x-text="g.title"></div>
+                <template x-for="i in g.items" :key="i.url"><a :href="i.url" class="block px-4 py-2.5 hover:bg-slate-50"><div class="truncate text-sm font-medium text-slate-900" x-text="i.title"></div><div class="truncate text-xs text-slate-500" x-text="i.sub"></div></a></template></div></template>
+            <p x-show="term.trim().length >= 2 && !busy && groups.length === 0" class="px-4 py-8 text-center text-sm text-slate-500">Nothing found for that.</p>
+            <p x-show="term.trim().length < 2" class="px-4 py-8 text-center text-sm text-slate-500">Type at least two letters.</p>
+        </div>
+    </div>
+</div>
 @endif
 
 {{-- Quick create: a bottom sheet on phones, a centred dialog on desktop. --}}
 @if ($quick)
 <div x-show="create" x-cloak @keydown.escape.window="create = false" class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Create new">
     <div @click.outside="create = false" class="w-full max-w-md rounded-t-2xl bg-white p-5 sm:rounded-2xl">
-        <div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-bold text-slate-900">Create new</h2>
+        <div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-bold text-slate-900">{{ __('ui.create_new') }}</h2>
             <button type="button" @click="create = false" class="grid size-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close"><i class="bi bi-x-lg"></i></button></div>
         <div class="grid grid-cols-2 gap-2">
             @foreach ($quick as [$route, $icon, $label])

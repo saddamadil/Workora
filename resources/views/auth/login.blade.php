@@ -17,6 +17,7 @@
         </div>
         <label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" name="remember" class="rounded border-slate-300"> Keep me signed in</label>
         <button class="btn-primary w-full">Sign in</button>
+        <p class="text-center text-sm"><a href="{{ route('password.request') }}" class="text-brand-600 hover:underline">Forgot your password?</a></p>
     </form>
 </div>
 <p class="mt-5 text-center text-sm text-slate-500">New here? <a href="{{ route('register') }}" class="font-semibold text-brand-600 hover:underline">Create a free account</a></p>

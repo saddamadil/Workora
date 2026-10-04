@@ -43,6 +43,11 @@ class DashboardStats
             'upcomingInvoices' => $openInvoices->filter(fn ($i) => $i->due_date->lte(now()->addDays(14)))->sortBy('due_date')->take(5)->values(),
             'upcomingProjects' => Project::query()->where('status', 'active')->whereBetween('deadline', [now()->startOfDay(), now()->addDays(30)])->orderBy('deadline')->limit(4)->get(['id', 'name', 'slug', 'deadline']),
             'activity' => \App\Models\AuditLog::query()->with('user:id,name')->latest('created_at')->limit(8)->get(),
+            'widgets' => $user->dashboard_widgets ?? array_keys(\App\Http\Controllers\SettingsController::WIDGETS),
+            'hoursWeek' => (int) TimeEntry::where('user_id', $user->id)->where('minutes', '>', 0)->whereDate('entry_date', '>=', now()->startOfWeek()->toDateString())->sum('minutes'),
+            'hoursMonth' => (int) TimeEntry::where('user_id', $user->id)->where('minutes', '>', 0)->whereDate('entry_date', '>=', $monthStart->toDateString())->sum('minutes'),
+            'billableMonth' => (int) TimeEntry::where('user_id', $user->id)->where('is_billable', true)->where('minutes', '>', 0)->whereDate('entry_date', '>=', $monthStart->toDateString())->sum('minutes'),
+            'recentInvoices' => Invoice::query()->with('client:id,name')->where('status', '!=', 'draft')->latest('issue_date')->limit(5)->get(),
         ];
     }
 

@@ -29,7 +29,8 @@ class NotificationController extends Controller
 
         // Only ever send people to a page inside this site.
         $url = (string) $notification->url;
-        $local = str_starts_with($url, url('/')) || str_starts_with($url, '/');
+        $host = parse_url($url, PHP_URL_HOST);
+        $local = (str_starts_with($url, '/') && ! str_starts_with($url, '//')) || ($host !== null && strcasecmp($host, $request->getHost()) === 0 && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true));
 
         return redirect($local && $url !== '' ? $url : route('notifications.index'));
     }

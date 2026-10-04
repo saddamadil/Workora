@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // the global scope, the RLS session variable, the policies — depends
         // on this having resolved the current company first.
         $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
             SetCurrentOrganization::class,
         ]);
 

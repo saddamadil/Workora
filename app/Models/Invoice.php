@@ -182,6 +182,11 @@ class Invoice extends Model
         return $this->isOverdue() && in_array($this->status, ['approved', 'partially_paid', 'submitted', 'under_review'], true) ? 'overdue' : 'sent';
     }
 
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);

@@ -4,7 +4,8 @@
 @php
     $first = explode(' ', auth()->user()->name)[0];
     $hour = now()->tz($org->timezone ?? 'UTC')->hour;
-    $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+    $greeting = $hour < 12 ? __('ui.good_morning') : ($hour < 18 ? __('ui.good_afternoon') : __('ui.good_evening'));
+    $on = fn ($k) => in_array($k, $widgets, true);
     $fmt = fn (array $by) => $by ? collect($by)->map(fn ($m, $c) => money($m, $c))->implode(' + ') : money(0, $org->base_currency);
     $prio = ['urgent' => 'red', 'high' => 'orange', 'medium' => 'blue', 'low' => 'slate'];
     $label = [
@@ -18,12 +19,14 @@
     @can('create', \App\Models\Invoice::class)<a href="{{ route('invoices.create') }}" class="btn-primary"><i class="bi bi-receipt"></i> Create invoice</a>@endcan
 </x-page-title>
 
+@if ($on('kpis'))
 <div class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
     <x-stat label="Active clients" :value="$activeClients" icon="bi-people" tone="slate" :href="route('clients.index', ['filter' => 'active'])" />
     <x-stat label="Active projects" :value="$activeProjects" icon="bi-kanban" tone="slate" :href="route('projects.index', ['status' => 'active'])" />
     <x-stat label="Outstanding" :value="$fmt($outstanding)" icon="bi-hourglass-split" :tone="$outstanding ? 'amber' : 'slate'" :href="route('invoices.index', ['status' => 'sent'])" />
     <x-stat label="This month" :value="$fmt($thisMonth)" icon="bi-cash-coin" tone="green" :href="route('payments.index')" />
 </div>
+@endif
 
 @if ($activeClients === 0)
     <div class="card mb-6 flex flex-wrap items-center gap-4 p-6">
@@ -35,6 +38,7 @@
 
 <div class="grid gap-6 lg:grid-cols-3">
     <div class="space-y-6 lg:col-span-2">
+        @if ($on('tasks'))
         <section class="card" aria-labelledby="today">
             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h2 id="today" class="font-semibold text-slate-900">Today's tasks</h2><a href="{{ route('tasks.index') }}" class="text-sm text-brand-600 hover:underline">All tasks</a></div>
             @forelse ($todayTasks as $t)
@@ -50,7 +54,21 @@
                     <a href="{{ route('tasks.index') }}" class="mt-3 inline-block text-brand-600 hover:underline">Open my tasks</a></div>
             @endforelse
         </section>
+        @endif
 
+        @if ($on('hours'))
+        <section class="card p-5" aria-labelledby="hw"><h2 id="hw" class="mb-3 font-semibold text-slate-900">Work hours</h2>
+            <dl class="grid grid-cols-3 gap-3 text-sm"><div><dt class="text-xs text-slate-500">This week</dt><dd class="text-lg font-bold text-slate-900">{{ hours($hoursWeek) }}</dd></div><div><dt class="text-xs text-slate-500">This month</dt><dd class="text-lg font-bold text-slate-900">{{ hours($hoursMonth) }}</dd></div><div><dt class="text-xs text-slate-500">Billable this month</dt><dd class="text-lg font-bold text-slate-900">{{ hours($billableMonth) }}</dd></div></dl>
+            <a href="{{ route('time.index') }}" class="mt-3 inline-block text-sm text-brand-600 hover:underline">Log work</a></section>
+        @endif
+
+        @if ($on('invoices'))
+        <section class="card" aria-labelledby="ri"><div class="flex items-center justify-between border-b border-slate-100 px-5 py-3"><h2 id="ri" class="font-semibold text-slate-900">Recent invoices</h2><a href="{{ route('invoices.index') }}" class="text-sm text-brand-600 hover:underline">All invoices</a></div>
+            @forelse ($recentInvoices as $i)<a href="{{ route('invoices.show', $i) }}" class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 text-sm last:border-0 hover:bg-slate-50"><span class="font-medium text-slate-900">{{ $i->number }} <span class="font-normal text-slate-500">· {{ $i->client?->name }}</span></span><span class="text-slate-600">{{ money($i->total_minor, $i->currency) }} · {{ ucfirst($i->displayStatus()) }}</span></a>
+            @empty<p class="px-5 py-8 text-center text-sm text-slate-500">Create your first invoice in a few clicks.</p>@endforelse</section>
+        @endif
+
+        @if ($on('activity'))
         <section class="card" aria-labelledby="recent">
             <div class="border-b border-slate-100 px-5 py-3"><h2 id="recent" class="font-semibold text-slate-900">Recent activity</h2></div>
             @forelse ($activity as $a)
@@ -62,9 +80,11 @@
                 <p class="px-5 py-8 text-center text-sm text-slate-500">Activity from your clients and projects shows up here.</p>
             @endforelse
         </section>
+        @endif
     </div>
 
     <div class="space-y-6">
+        @if ($on('upcoming'))
         <section class="card" aria-labelledby="upcoming">
             <div class="border-b border-slate-100 px-5 py-3"><h2 id="upcoming" class="font-semibold text-slate-900">Upcoming</h2></div>
             @php $any = $upcomingTasks->isNotEmpty() || $upcomingInvoices->isNotEmpty() || $upcomingProjects->isNotEmpty(); @endphp
@@ -79,6 +99,8 @@
             @endforeach
             @unless ($any)<p class="px-5 py-8 text-center text-sm text-slate-500">No deadlines or invoice due dates coming up.</p>@endunless
         </section>
+        @endif
+        @if ($on('quick'))
         <section class="card p-5" aria-labelledby="qa">
             <h2 id="qa" class="mb-3 font-semibold text-slate-900">Quick actions</h2>
             <div class="grid grid-cols-2 gap-2 text-sm">
@@ -88,6 +110,8 @@
                 @can('create', \App\Models\Invoice::class)<a class="btn-secondary" href="{{ route('invoices.create') }}"><i class="bi bi-receipt"></i> Create invoice</a>@endcan
             </div>
         </section>
+        @endif
     </div>
 </div>
+<p class="mt-6 text-center text-xs text-slate-500"><a href="{{ route('settings.index') }}" class="hover:underline"><i class="bi bi-sliders"></i> Choose what shows on this dashboard</a></p>
 @endsection

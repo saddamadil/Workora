@@ -82,10 +82,16 @@ class AuthController extends Controller
             return $user;
         });
 
+        event(new \Illuminate\Auth\Events\Registered($user));
         Auth::login($user);
         $request->session()->regenerate();
 
-        return $this->afterAuth($request)->with('status', 'Welcome to '.'Freelancy'.'.');
+        // A new solo freelancer is walked through setup; everyone else goes straight in.
+        if (! $invited && $data['account_type'] === 'freelancer') {
+            return redirect()->route('welcome')->with('status', 'Welcome to Freelancy.');
+        }
+
+        return $this->afterAuth($request)->with('status', 'Welcome to Freelancy.');
     }
 
     /** Pick up an invitation the person was looking at before they signed in, else go home. */

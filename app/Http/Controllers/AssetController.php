@@ -31,6 +31,11 @@ class AssetController extends Controller
 
         abort_unless($related, 404);
 
+        // A client sees photos of the people they work with, never of other clients.
+        if ($this->tenancy->isClient() && $me->id !== $user->id) {
+            abort_unless(OrganizationMember::query()->where('user_id', $user->id)->where('role', '!=', 'client')->where('status', 'active')->exists(), 404);
+        }
+
         return $this->send($user->avatar_path);
     }
 
@@ -51,7 +56,8 @@ class AssetController extends Controller
 
     public function clientLogo(Client $client): StreamedResponse
     {
-        abort_unless($this->tenancy->isStaff(), 404);
+        // Staff see every client's logo; a client login sees only their own.
+        abort_unless($this->tenancy->isStaff() || ($this->tenancy->isClient() && $this->tenancy->clientId() === $client->id), 404);
 
         return $this->send($client->logo_path);
     }

@@ -22,6 +22,12 @@ class ProjectPolicy
 {
     public function __construct(private Tenancy $tenancy) {}
 
+    /** A client login never uses the workspace's own rules; the portal has its own, narrower queries. */
+    public function before(\App\Models\User $user, string $ability): ?bool
+    {
+        return $this->tenancy->isClient() ? false : null;
+    }
+
     public function viewAny(User $user): bool
     {
         return $this->tenancy->role() !== null;

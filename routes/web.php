@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClientController;
@@ -13,6 +15,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\PortalFileController;
 use App\Http\Controllers\ProjectFileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\NotificationController;
@@ -25,11 +28,13 @@ use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PublicShareController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShareLinkController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TimeController;
+use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\WorkRequestController;
 use Illuminate\Support\Facades\Route;
@@ -52,10 +57,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'send'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'form'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1')->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])->middleware('signed')->name('verification.verify');
+    Route::post('/email/verification-notification', [VerifyEmailController::class, 'resend'])->middleware('throttle:3,1')->name('verification.send');
 
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
     Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
@@ -65,6 +76,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    Route::get('/welcome/{step?}', [WelcomeController::class, 'show'])->whereNumber('step')->name('welcome');
+    Route::post('/welcome/profile', [WelcomeController::class, 'profile'])->name('welcome.profile');
+    Route::post('/welcome/payment', [WelcomeController::class, 'payment'])->name('welcome.payment');
+    Route::post('/welcome/client', [WelcomeController::class, 'client'])->name('welcome.client');
+    Route::post('/welcome/project', [WelcomeController::class, 'project'])->name('welcome.project');
+    Route::post('/welcome/done', [WelcomeController::class, 'done'])->name('welcome.done');
+    Route::get('/search', SearchController::class)->name('search.index');
+    Route::get('/help', fn () => view('help'))->name('help');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/locale', [SettingsController::class, 'updateLocale'])->name('settings.locale');
+    Route::post('/settings/widgets', [SettingsController::class, 'updateWidgets'])->name('settings.widgets');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/settings', [NotificationController::class, 'preferences'])->name('notifications.preferences');
     Route::post('/notifications/settings', [NotificationController::class, 'savePreferences'])->name('notifications.preferences.save');
@@ -79,14 +101,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/tasks', [PortalController::class, 'tasks'])->name('tasks');
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
+        Route::get('/payments', [PortalController::class, 'payments'])->name('payments');
         Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
         Route::post('/invoices/{invoice}/paid', [PaymentReportController::class, 'store'])->name('invoices.paid');
+        Route::get('/company', [PortalController::class, 'company'])->name('company');
+        Route::post('/company', [PortalController::class, 'updateCompany'])->name('company.update');
         Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
         Route::post('/profile', [PortalController::class, 'updateProfile'])->name('profile.update');
 
         Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
         Route::get('/messages/poll', [MessageController::class, 'poll'])->name('messages.poll');
-        Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+        Route::post('/messages', [MessageController::class, 'store'])->middleware('throttle:60,1')->name('messages.store');
         Route::post('/messages/typing', [MessageController::class, 'typing'])->name('messages.typing');
         Route::post('/messages/{message}/important', [MessageController::class, 'important'])->name('messages.important');
         Route::post('/messages/{message}/request', [MessageController::class, 'toRequest'])->name('messages.to-request');
@@ -108,7 +133,7 @@ Route::middleware('auth')->group(function () {
     // Staff side of the same features.
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::get('/messages/poll', [MessageController::class, 'poll'])->name('messages.poll');
-    Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::post('/messages', [MessageController::class, 'store'])->middleware('throttle:60,1')->name('messages.store');
     Route::post('/messages/typing', [MessageController::class, 'typing'])->name('messages.typing');
     Route::post('/messages/{message}/important', [MessageController::class, 'important'])->name('messages.important');
     Route::post('/messages/{message}/task', [MessageController::class, 'toTask'])->name('messages.to-task');
@@ -123,6 +148,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/milestones/{milestone}', [MilestoneController::class, 'update'])->name('milestones.update');
     Route::delete('/milestones/{milestone}', [MilestoneController::class, 'destroy'])->name('milestones.destroy');
 
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     Route::post('/calendar/events', [CalendarController::class, 'store'])->name('calendar.events.store');
     Route::delete('/calendar/events/{event}', [CalendarController::class, 'destroy'])->name('calendar.events.destroy');

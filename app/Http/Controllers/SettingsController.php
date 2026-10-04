@@ -20,6 +20,46 @@ class SettingsController extends Controller
         'international' => 'International', 'gst' => 'GST invoice',
     ];
 
+    public const WIDGETS = [
+        'kpis' => 'Key numbers (clients, projects, outstanding, this month)',
+        'tasks' => "Today's tasks",
+        'upcoming' => 'Upcoming deadlines and due dates',
+        'invoices' => 'Recent invoices',
+        'hours' => 'Work hours',
+        'activity' => 'Recent activity',
+        'quick' => 'Quick actions',
+    ];
+
+    /** A hub for personal settings, shared by freelancers and clients. */
+    public function index(Request $request, Tenancy $tenancy): View
+    {
+        $user = $request->user();
+
+        return view('settings.index', [
+            'locales' => \App\Http\Middleware\SetLocale::SUPPORTED,
+            'current' => $user->getAttributes()['locale'] ?? 'en',
+            'widgets' => self::WIDGETS,
+            'enabled' => $user->dashboard_widgets ?? array_keys(self::WIDGETS),
+            'solo' => $tenancy->isSolo() && $tenancy->role() === \App\Enums\OrganizationRole::Owner,
+        ]);
+    }
+
+    public function updateLocale(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['locale' => ['required', \Illuminate\Validation\Rule::in(array_keys(\App\Http\Middleware\SetLocale::SUPPORTED))]]);
+        $request->user()->update(['locale' => $data['locale']]);
+
+        return back()->with('status', 'Saved.');
+    }
+
+    public function updateWidgets(Request $request): RedirectResponse
+    {
+        $chosen = array_values(array_intersect(array_keys(self::WIDGETS), (array) $request->input('widgets', [])));
+        $request->user()->update(['dashboard_widgets' => $chosen]);
+
+        return back()->with('status', 'Dashboard updated.');
+    }
+
     public function company(Tenancy $tenancy): View
     {
         $this->authorize('manage-team');

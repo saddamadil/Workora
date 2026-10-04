@@ -129,6 +129,21 @@ class PortalController extends Controller
         ]);
     }
 
+    /** What is due, the next due date and everything paid so far. */
+    public function payments(): View
+    {
+        $client = $this->client();
+        $invoices = Invoice::query()->where('client_id', $client->id)->whereIn('status', array_merge(self::OPEN, ['paid']))->get();
+        $open = $invoices->whereIn('status', self::OPEN);
+
+        return view('portal.payments', [
+            'due' => $open->groupBy('currency')->map(fn ($g) => (int) $g->sum(fn ($i) => $i->total_minor - $i->amount_paid_minor))->all(),
+            'nextDue' => $open->sortBy('due_date')->first(),
+            'open' => $open->sortBy('due_date')->values(),
+            'history' => \App\Models\Payment::query()->with('invoice:id,number')->whereIn('invoice_id', $invoices->pluck('id'))->where('status', 'paid')->latest('paid_at')->get(),
+        ]);
+    }
+
     public function invoice(Request $request, Invoice $invoice): View
     {
         $this->authorize('view', $invoice);
@@ -147,6 +162,56 @@ class PortalController extends Controller
             'payout' => app(\App\Services\InvoiceDocument::class)->payment($invoice),
             'reports' => $reports,
         ]);
+    }
+
+    /** The client's own company details. They fill in invoices addressed to this client. */
+    public function company(): View
+    {
+        return view('portal.company', ['client' => $this->client()]);
+    }
+
+    public function updateCompany(Request $request, \App\Services\ImageStore $images): RedirectResponse
+    {
+        $client = $this->client();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'legal_name' => ['nullable', 'string', 'max:200'],
+            'contact_name' => ['nullable', 'string', 'max:160'],
+            'email' => ['nullable', 'email', 'max:190'],
+            'phone' => ['nullable', 'string', 'max:40'],
+            'website' => ['nullable', 'url', 'max:200'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
+            'country_code' => ['nullable', 'string', 'size:2'],
+            'default_currency' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Support\Money::CURRENCIES))],
+            'tax_ids' => ['nullable', 'array'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+        ]);
+
+        [$taxIds, $errors] = \App\Support\TaxFields::clean($data['country_code'] ?? null, $data['tax_ids'] ?? []);
+        if ($errors) {
+            throw \Illuminate\Validation\ValidationException::withMessages(collect($errors)->mapWithKeys(fn ($m, $k) => ["tax_ids.$k" => $m])->all());
+        }
+        $data['tax_ids'] = $taxIds ?: null;
+        $data['country_code'] = isset($data['country_code']) ? strtoupper($data['country_code']) : null;
+
+        try {
+            if ($request->hasFile('logo')) {
+                $images->delete($client->logo_path);
+                $data['logo_path'] = $images->store($request->file('logo'), 'branding/clients', 600);
+            }
+        } catch (\RuntimeException $e) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['logo' => $e->getMessage()]);
+        }
+        unset($data['logo']);
+
+        // Only these fields: status, type and the freelancer's private notes are not the client's to change.
+        $client->update($data);
+        AuditLog::record('client.profile_updated', $client);
+
+        return back()->with('status', 'Company details saved. They will be used on your next invoices.');
     }
 
     public function profile(Request $request): View

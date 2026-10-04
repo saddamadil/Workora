@@ -46,7 +46,7 @@ class AuthTest extends WorkoraTestCase
         $this->post('/register', [
             'account_type' => 'freelancer', 'name' => 'Fay Free', 'email' => 'fay@example.com',
             'password' => 'long-enough-1', 'password_confirmation' => 'long-enough-1',
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('welcome'));
 
         $user = User::where('email', 'fay@example.com')->firstOrFail();
         $this->assertNotNull($user->freelancerProfile);
