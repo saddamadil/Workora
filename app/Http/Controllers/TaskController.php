@@ -121,6 +121,7 @@ class TaskController extends Controller
 
         $task->update(['status' => 'approved', 'approved_by' => $request->user()->id, 'approved_at' => now()]);
         \App\Models\AuditLog::record('task.completed', $task, ['project_id' => $task->project_id]);
+        $this->tellClientTaskDone($task, $request->user());
 
         return back()->with('status', 'Task completed.');
     }
@@ -199,6 +200,7 @@ class TaskController extends Controller
         if ($approving) {
             $task->update(['status' => 'approved', 'approved_by' => $request->user()->id, 'approved_at' => now()]);
             AuditLog::record('task.approved', $task);
+            $this->tellClientTaskDone($task, $request->user());
             $message = 'Work approved.';
         } else {
             // One revision item per line, so the freelancer gets a checklist rather than a paragraph.
@@ -305,6 +307,17 @@ class TaskController extends Controller
     {
         $this->authorize('view', $task);
         abort_unless($request->user()->can('update', $task) || $request->user()->can('work', $task), 403);
+    }
+
+    /** Clients hear when work on their project is finished, unless the task is private. */
+    private function tellClientTaskDone(Task $task, \App\Models\User $by): void
+    {
+        $project = Project::query()->find($task->project_id);
+        if ($task->is_internal || ! $project?->client_id) {
+            return;
+        }
+        $client = \App\Models\Client::query()->find($project->client_id);
+        app(\App\Services\Notifier::class)->send(app(\App\Services\ClientContext::class)->clientUsers($client), 'task', 'Task completed: '.$task->title, $project->name, route('portal.project', [$project->slug, 'tab' => 'tasks']), $by);
     }
 
     /** @return array{fields: array, assignees: array<int, string>} */

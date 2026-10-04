@@ -54,6 +54,15 @@ class Notifier
         }
     }
 
+    /** Like send(), but not again if the same person already got this same title within $days. */
+    public function once(User $user, string $type, string $title, ?string $body, ?string $url, int $days = 1): void
+    {
+        $seen = AppNotification::query()->where('user_id', $user->id)->where('type', $type)->where('title', $title)->where('created_at', '>=', now()->subDays($days))->exists();
+        if (! $seen) {
+            $this->send($user, $type, $title, $body, $url);
+        }
+    }
+
     public function unreadCount(User $user): int
     {
         return AppNotification::query()->where('user_id', $user->id)->whereNull('read_at')->count();

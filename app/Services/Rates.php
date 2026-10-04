@@ -18,7 +18,8 @@ class Rates
             return $contract->hourly_rate_minor;
         }
 
-        return OrganizationMember::query()->where('user_id', $user->id)->value('default_rate_minor');
+        return OrganizationMember::query()->where('user_id', $user->id)->value('default_rate_minor')
+            ?: \App\Models\FreelancerProfile::query()->where('user_id', $user->id)->value('default_hourly_rate_minor');
     }
 
     /** The contract that governs this person's hourly work, preferring one tied to the project. */

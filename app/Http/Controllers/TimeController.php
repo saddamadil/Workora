@@ -52,8 +52,23 @@ class TimeController extends Controller
             'totalMinutes' => (int) $entries->sum('minutes'),
             'estimateMinor' => (int) $billable->sum(fn (TimeEntry $e) => $e->amountMinor()),
             'editable' => ! $timesheet || $timesheet->isEditable(),
+            'month' => $this->monthSummary($user),
+            'solo' => $this->tenancy->isSolo(),
             'showMoney' => $this->tenancy->isFreelancer() || Gate::allows('see-money'),
         ]);
+    }
+
+    /** This calendar month: hours, billable hours and what they are worth, per project currency. */
+    private function monthSummary($user): array
+    {
+        $entries = TimeEntry::query()->with('project:id,name,currency')->where('user_id', $user->id)->where('minutes', '>', 0)
+            ->whereDate('entry_date', '>=', now()->startOfMonth()->toDateString())->whereDate('entry_date', '<=', now()->endOfMonth()->toDateString())->get();
+
+        return [
+            'total' => (int) $entries->sum('minutes'),
+            'billable' => (int) $entries->where('is_billable', true)->sum('minutes'),
+            'value' => $entries->where('is_billable', true)->groupBy(fn ($e) => $e->project->currency)->map(fn ($g) => (int) $g->sum(fn ($e) => $e->amountMinor()))->all(),
+        ];
     }
 
     public function start(Request $request): RedirectResponse
@@ -87,6 +102,7 @@ class TimeController extends Controller
             'description' => $data['description'] ?? null,
             'is_billable' => true,
             'rate_minor' => $this->rates->hourlyFor($user, $project),
+            'client_id' => $project->client_id,
             'source' => 'timer',
         ]);
 
@@ -125,6 +141,7 @@ class TimeController extends Controller
             'duration' => ['required', 'string', 'max:10'],
             'description' => ['nullable', 'string', 'max:500'],
             'is_billable' => ['nullable', 'boolean'],
+            'rate' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
         ]);
 
         $minutes = $this->parseDuration($data['duration']);
@@ -146,7 +163,8 @@ class TimeController extends Controller
             'minutes' => $minutes,
             'description' => $data['description'] ?? null,
             'is_billable' => $request->boolean('is_billable', true),
-            'rate_minor' => $this->rates->hourlyFor($user, $project),
+            'rate_minor' => isset($data['rate']) && $data['rate'] !== null ? \App\Support\Money::toMinor($data['rate']) : $this->rates->hourlyFor($user, $project),
+            'client_id' => $project->client_id,
             'source' => 'manual',
         ]);
         $task?->refreshActualHours();

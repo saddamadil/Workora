@@ -85,8 +85,9 @@ class InvoiceController extends Controller
         }
 
         $client = $request->filled('client') ? Client::query()->find($request->query('client')) : null;
+        $project = $client && $request->filled('project') ? \App\Models\Project::query()->where('client_id', $client->id)->find($request->query('project')) : null;
 
-        return view('invoices.wizard', $this->wizardData(new Invoice($this->defaults($issuer, $client)), 1, $issuer));
+        return view('invoices.wizard', $this->wizardData(new Invoice($this->defaults($issuer, $client) + ['project_id' => $project?->id]), 1, $issuer));
     }
 
     public function store(Request $request): RedirectResponse
@@ -232,7 +233,7 @@ class InvoiceController extends Controller
         $entries = $this->billableEntries($invoice)->with('project:id,name', 'task:id,title')->get();
 
         if ($entries->isEmpty()) {
-            return back()->with('error', 'No approved, unbilled time is available. Time appears here once the company approves the timesheet.');
+            return back()->with('error', $this->tenancy->isSolo() ? 'No unbilled billable time was found for this client or project.' : 'No approved, unbilled time is available. Time appears here once the company approves the timesheet.');
         }
 
         DB::transaction(function () use ($invoice, $entries) {
@@ -388,6 +389,7 @@ class InvoiceController extends Controller
             'snapshot' => $this->documents->snapshot($invoice),
         ]);
         AuditLog::record('invoice.sent', $invoice);
+        $this->tellClient($invoice, 'invoice', 'New invoice '.$invoice->number, money($invoice->total_minor, $invoice->currency).' due '.$invoice->due_date->format('d M Y'), route('portal.invoice', $invoice));
 
         $message = 'Invoice sent for approval.';
         if (! empty($data['email_to'])) {
@@ -460,6 +462,18 @@ class InvoiceController extends Controller
 
     // ---------------------------------------------------------------- internals
 
+    /** Tell the people who log in as the invoice's client. */
+    private function tellClient(Invoice $invoice, string $type, string $title, ?string $body, string $url): void
+    {
+        if (! $invoice->client_id) {
+            return;
+        }
+        $client = Client::query()->find($invoice->client_id);
+        if ($client) {
+            app(\App\Services\Notifier::class)->send(app(\App\Services\ClientContext::class)->clientUsers($client), $type, $title, $body, $url, auth()->user());
+        }
+    }
+
     private function applyPayment(Request $request, Invoice $invoice, int $amount, array $data): void
     {
         DB::transaction(function () use ($request, $invoice, $data, $amount) {
@@ -483,6 +497,7 @@ class InvoiceController extends Controller
             $paid = $invoice->amount_paid_minor + $amount;
             $invoice->update(['amount_paid_minor' => $paid, 'status' => $paid >= $invoice->total_minor ? 'paid' : 'partially_paid']);
             AuditLog::record('payment.recorded', $invoice, ['new' => ['amount_minor' => $amount]]);
+            $this->tellClient($invoice, 'payment', 'Payment received for '.$invoice->number, money($amount, $invoice->currency), route('portal.invoice', $invoice));
         });
     }
 
@@ -513,6 +528,7 @@ class InvoiceController extends Controller
                 ? OrganizationMember::query()->with('user:id,name')->where('member_type', 'freelancer')->where('status', 'active')->get()
                 : collect(),
             'clients' => Client::query()->orderBy('name')->get(['id', 'name', 'country_code', 'default_currency']),
+            'projects' => \App\Models\Project::query()->whereNotNull('client_id')->orderBy('name')->get(['id', 'name', 'client_id']),
             'contracts' => $issuer ? Contract::query()->where('user_id', $issuer->id)->where('status', 'active')->get() : collect(),
             'templates' => \App\Http\Controllers\SettingsController::TEMPLATES,
             'currencies' => array_keys(Money::CURRENCIES),
@@ -575,6 +591,7 @@ class InvoiceController extends Controller
             'bill_to_type' => ['required', Rule::in($this->tenancy->isSolo() ? ['client'] : ['company', 'client'])],
             'client_id' => ['required_if:bill_to_type,client', 'nullable', 'uuid'],
             'contract_id' => ['nullable', 'uuid'],
+            'project_id' => ['nullable', 'uuid'],
             'issue_date' => ['required', 'date'],
             'terms_days' => ['required', Rule::in([...array_map('strval', array_keys(Invoice::TERMS)), 'custom'])],
             'due_date' => ['required_if:terms_days,custom', 'nullable', 'date', 'after_or_equal:issue_date'],
@@ -611,6 +628,9 @@ class InvoiceController extends Controller
         if ($data['bill_to_type'] === 'client') {
             Client::findOrFail($data['client_id']);
         }
+        if (! empty($data['project_id'])) {
+            \App\Models\Project::query()->where('client_id', $data['bill_to_type'] === 'client' ? $data['client_id'] : null)->findOrFail($data['project_id']);
+        }
         if (! empty($data['contract_id'])) {
             Contract::query()->where('user_id', $issuer->id)->where('status', 'active')->findOrFail($data['contract_id']);
         }
@@ -622,6 +642,7 @@ class InvoiceController extends Controller
             'bill_to_type' => $data['bill_to_type'],
             'client_id' => $data['bill_to_type'] === 'client' ? $data['client_id'] : null,
             'contract_id' => $data['contract_id'] ?? null,
+            'project_id' => $data['project_id'] ?? null,
             'issue_date' => $issued,
             'due_date' => $due,
             'payment_terms' => $terms,
@@ -659,8 +680,13 @@ class InvoiceController extends Controller
     /** Unbilled, approved, billable time for this invoice's freelancer (and project, if the contract names one). */
     private function billableEntries(Invoice $invoice)
     {
+        $solo = $this->tenancy->isSolo();
+
         return TimeEntry::query()->where('user_id', $invoice->user_id)->where('is_billable', true)->whereNull('locked_at')->where('minutes', '>', 0)
-            ->whereHas('timesheet', fn ($q) => $q->where('status', 'approved'))
+            // With a company, only approved timesheets are billable. On a solo workspace nobody approves hours.
+            ->when(! $solo, fn ($q) => $q->whereHas('timesheet', fn ($t) => $t->where('status', 'approved')))
+            ->when($solo && $invoice->project_id, fn ($q) => $q->where('project_id', $invoice->project_id))
+            ->when($solo && ! $invoice->project_id && $invoice->client_id, fn ($q) => $q->where('client_id', $invoice->client_id))
             ->when($invoice->contract?->project_id, fn ($q, $p) => $q->where('project_id', $p))
             ->orderBy('entry_date');
     }

@@ -38,6 +38,13 @@
                 </select>
                 @if ($clients->isEmpty())<p class="mt-1 text-xs text-slate-500">No clients yet. <a class="text-brand-600 underline" href="{{ route('clients.create') }}">Add one</a>.</p>@endif
             </div>
+            <div x-show="billTo === 'client'" x-cloak x-data="{ pid: '{{ $v('project_id') }}' }">
+                <label class="label" for="project_id">Project <span class="font-normal text-slate-400">(optional)</span></label>
+                <select id="project_id" name="project_id" class="input" x-model="pid" :disabled="billTo !== 'client'">
+                    <option value="">Not tied to a project</option>
+                    @foreach ($projects as $pr)<option value="{{ $pr->id }}" data-client="{{ $pr->client_id }}">{{ $pr->name }}</option>@endforeach
+                </select>
+            </div>
             <div>
                 <label class="label" for="contract_id">Contract <span class="font-normal text-slate-400">(optional)</span></label>
                 <select id="contract_id" name="contract_id" class="input">

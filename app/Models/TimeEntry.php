@@ -16,7 +16,7 @@ class TimeEntry extends Model
     protected $fillable = [
         'organization_id', 'user_id', 'timesheet_id', 'project_id', 'task_id',
         'entry_date', 'started_at', 'ended_at', 'minutes', 'description',
-        'is_billable', 'rate_minor', 'source', 'locked_at',
+        'is_billable', 'rate_minor', 'source', 'locked_at', 'client_id',
     ];
 
     protected function casts(): array

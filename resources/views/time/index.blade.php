@@ -86,11 +86,18 @@
                 </div>
                 <div><label class="label" for="mn">Note</label><input id="mn" name="description" class="input" maxlength="500"></div>
                 <label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" name="is_billable" value="1" checked class="rounded border-slate-300"> Billable</label>
+                <div class="flex items-center gap-2 text-sm text-slate-600"><label for="mr">Rate per hour</label><input id="mr" name="rate" type="number" step="0.01" min="0" class="input w-28 py-1.5" placeholder="Default"></div>
                 <button class="btn-primary w-full" @disabled($projects->isEmpty())>Add entry</button>
             </form>
         @endif
 
-        @if ($editable && $entries->isNotEmpty())
+        <div class="card p-5 text-sm">
+            <h2 class="mb-2 font-semibold text-slate-900">{{ now()->format('F') }} so far</h2>
+            <dl class="grid grid-cols-2 gap-2"><div><dt class="text-xs text-slate-500">Hours</dt><dd class="font-semibold text-slate-900">{{ hours($month['total']) }}</dd></div><div><dt class="text-xs text-slate-500">Billable</dt><dd class="font-semibold text-slate-900">{{ hours($month['billable']) }}</dd></div>
+                <div class="col-span-2"><dt class="text-xs text-slate-500">Worth</dt><dd class="font-semibold text-slate-900">{{ $month['value'] ? collect($month['value'])->map(fn ($m, $c) => money($m, $c))->implode(' + ') : '—' }}</dd></div></dl>
+        </div>
+
+        @if (! $solo && $editable && $entries->isNotEmpty())
             <form method="POST" action="{{ route('time.submit-week') }}" class="card p-5">@csrf
                 <input type="hidden" name="week" value="{{ $weekStart->toDateString() }}">
                 <h2 class="font-semibold text-slate-900">Done for the week?</h2>

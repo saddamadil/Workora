@@ -66,9 +66,12 @@ class AppServiceProvider extends ServiceProvider
 
             if ($tenancy->check()) {
                 $user = auth()->user();
+                $isClient = $tenancy->isClient();
                 $view->with([
-                    'usedBytes' => (int) File::sum('size_bytes'),
-                    'totalFiles' => File::count(),
+                    'unreadNotifications' => \App\Models\AppNotification::query()->where('user_id', $user->id)->whereNull('read_at')->count(),
+                    // Storage figures are the freelancer's business; a client login never needs them.
+                    'usedBytes' => $isClient ? 0 : (int) File::sum('size_bytes'),
+                    'totalFiles' => $isClient ? 0 : File::count(),
                     'myOrgs' => $user->organizations()->wherePivot('status', 'active')->get(['organizations.id', 'organizations.name', 'organizations.slug']),
                 ]);
             }

@@ -30,6 +30,7 @@
             ['portal.messages.index', 'bi-chat-dots', 'Messages', 'portal.messages', true],
             ['portal.requests.index', 'bi-inbox', 'Requests', 'portal.requests', true],
             ['portal.files.index', 'bi-folder2-open', 'Files', 'portal.files', true],
+            ['portal.calendar.index', 'bi-calendar3', 'Calendar', 'portal.calendar', true],
             ['portal.invoices', 'bi-receipt', 'Invoices', 'portal.invoices', true],
             [null, 'bi-cash-coin', 'Payments', '', true],
             ['portal.profile', 'bi-person-circle', 'Profile', 'portal.profile', true],
@@ -48,7 +49,7 @@
             ['time.index', 'bi-stopwatch', 'My work', 'time', $has('time.index')],
             ['invoices.index', 'bi-receipt', 'My invoices', 'invoices', true],
             ['payments.index', 'bi-cash-coin', 'Payments', 'payments', $has('payments.index')],
-            [null, 'bi-calendar3', 'Calendar', '', true],
+            ['calendar.index', 'bi-calendar3', 'Calendar', 'calendar', true],
             [null, 'bi-bar-chart', 'Reports', '', true],
             ['profile.edit', 'bi-person-circle', 'Profile', 'profile', true],
             ['settings.company', 'bi-gear', 'Settings', 'settings', Gate::allows('manage-team')],
@@ -105,6 +106,7 @@
     <a href="{{ route($isClient ? 'portal.dashboard' : 'dashboard') }}" class="flex items-center gap-2 font-bold text-slate-900">
         <span class="grid size-8 place-items-center rounded-lg bg-slate-900 text-brand-500"><i class="bi bi-lightning-charge-fill"></i></span> Freelancy
     </a>
+    <a href="{{ route('notifications.index') }}" class="relative ml-auto mr-1 grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Notifications"><i class="bi bi-bell text-xl"></i>@if (($unreadNotifications ?? 0) > 0)<span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand-500"></span>@endif</a>
     <button type="button" @click="nav = !nav" class="grid size-11 place-items-center rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Open menu" :aria-expanded="nav">
         <i class="bi bi-list text-2xl"></i>
     </button>
@@ -115,6 +117,10 @@
            class="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-slate-200 bg-white p-3 transition-transform lg:sticky lg:top-0 lg:h-screen lg:shrink-0" aria-label="Main navigation">
         <a href="{{ route($isClient ? 'portal.dashboard' : 'dashboard') }}" class="mb-4 hidden items-center gap-2.5 px-2 pt-1 text-lg font-bold text-slate-900 lg:flex">
             <span class="grid size-9 place-items-center rounded-lg bg-slate-900 text-brand-500"><i class="bi bi-lightning-charge-fill"></i></span> Freelancy
+        </a>
+
+        <a href="{{ route('notifications.index') }}" class="mb-2 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 {{ request()->routeIs('notifications.*') ? 'bg-slate-100 text-slate-900' : '' }}">
+            <i class="bi bi-bell text-lg"></i> Notifications @if (($unreadNotifications ?? 0) > 0)<span class="ml-auto rounded-full bg-brand-500 px-2 text-xs font-semibold text-slate-900">{{ $unreadNotifications }}<span class="sr-only"> unread</span></span>@endif
         </a>
 
         @if ($quick)

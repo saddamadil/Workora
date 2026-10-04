@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeliverableController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MessageController;
@@ -13,6 +15,7 @@ use App\Http\Controllers\PortalFileController;
 use App\Http\Controllers\ProjectFileController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationSwitchController;
 use App\Http\Controllers\PaymentProfileController;
@@ -61,12 +64,19 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/settings', [NotificationController::class, 'preferences'])->name('notifications.preferences');
+    Route::post('/notifications/settings', [NotificationController::class, 'savePreferences'])->name('notifications.preferences.save');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
+
     // The client portal. A client login is limited to these routes by SetCurrentOrganization.
     Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/', [PortalController::class, 'dashboard'])->name('dashboard');
         Route::get('/projects', [PortalController::class, 'projects'])->name('projects');
         Route::get('/projects/{project}', [PortalController::class, 'project'])->name('project');
         Route::get('/tasks', [PortalController::class, 'tasks'])->name('tasks');
+        Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
         Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
         Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
@@ -83,6 +93,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/files', [PortalFileController::class, 'store'])->name('files.store');
         Route::get('/files/{file}', [PortalFileController::class, 'show'])->name('files.show');
         Route::get('/files/{file}/download', [PortalFileController::class, 'download'])->name('files.download');
+
+        Route::post('/deliverables/{deliverable}/approve', [DeliverableController::class, 'approve'])->name('deliverables.approve');
+        Route::post('/deliverables/{deliverable}/changes', [DeliverableController::class, 'requestChanges'])->name('deliverables.changes');
 
         Route::get('/requests', [RequestController::class, 'portalIndex'])->name('requests.index');
         Route::get('/requests/new', [RequestController::class, 'portalCreate'])->name('requests.create');
@@ -103,8 +116,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/files/{file}/client', [ProjectFileController::class, 'toggleClient'])->name('files.toggle-client');
 
     Route::post('/projects/{project}/milestones', [MilestoneController::class, 'store'])->name('projects.milestones.store');
+    Route::post('/projects/{project}/deliverables', [DeliverableController::class, 'store'])->name('projects.deliverables.store');
+    Route::post('/deliverables/{deliverable}/resubmit', [DeliverableController::class, 'resubmit'])->name('deliverables.resubmit');
     Route::patch('/milestones/{milestone}', [MilestoneController::class, 'update'])->name('milestones.update');
     Route::delete('/milestones/{milestone}', [MilestoneController::class, 'destroy'])->name('milestones.destroy');
+
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::post('/calendar/events', [CalendarController::class, 'store'])->name('calendar.events.store');
+    Route::delete('/calendar/events/{event}', [CalendarController::class, 'destroy'])->name('calendar.events.destroy');
 
     Route::get('/requests', [RequestController::class, 'index'])->name('requests.index');
     Route::get('/requests/{clientRequest}', [RequestController::class, 'show'])->name('requests.show');
