@@ -34,6 +34,7 @@
             ['portal.files.index', 'bi-folder2-open', __('ui.files'), 'portal.files', true],
             ['portal.calendar.index', 'bi-calendar3', __('ui.calendar'), 'portal.calendar', true],
             ['portal.invoices', 'bi-receipt', __('ui.invoices'), 'portal.invoices', true],
+            ['portal.hours', 'bi-clock-history', 'Hours', 'portal.hours', true],
             ['portal.payments', 'bi-cash-coin', __('ui.payments'), 'portal.payments', true],
             ['portal.profile', 'bi-person-circle', __('ui.profile'), 'portal.profile', true],
             ['portal.company', 'bi-building', __('ui.company'), 'portal.company', true],

@@ -513,8 +513,9 @@ class InvoiceController extends Controller
             $bytes = $pdf->render($invoice);
             $name = $invoice->organization->name;
 
-            Mail::raw("Hello,\n\nPlease find invoice {$invoice->number} from {$invoice->freelancer->name} attached.\nAmount: ".money($invoice->total_minor, $invoice->currency)."\nDue: {$invoice->due_date->format('d M Y')}\n\nSent through Freelancy for {$name}.\n",
-                fn ($m) => $m->to($to)->subject("Invoice {$invoice->number} from {$invoice->freelancer->name}")->attachData($bytes, InvoicePdf::filename($invoice), ['mime' => 'application/pdf']));
+            \App\Support\BrandedMail::send($to, "Invoice {$invoice->number} from {$invoice->freelancer->name}", "Invoice {$invoice->number}", "Hello,\n\nPlease find invoice {$invoice->number} from {$invoice->freelancer->name} attached as a PDF.", null, null,
+                ['Amount' => money($invoice->total_minor, $invoice->currency), 'Due' => $invoice->due_date->format('d M Y')], "Sent through Freelancy for {$name}.",
+                fn ($m) => $m->attachData($bytes, InvoicePdf::filename($invoice), ['mime' => 'application/pdf']));
 
             return ' A copy was emailed to '.$to.'.';
         } catch (\Throwable) {

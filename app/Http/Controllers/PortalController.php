@@ -88,6 +88,27 @@ class PortalController extends Controller
         return view('portal.tasks', ['projects' => $projects->keyBy('id'), 'tasks' => $tasks->groupBy('project_id')]);
     }
 
+    /** Billable hours on the projects where the freelancer chose to share them. */
+    public function hours(Request $request): View
+    {
+        $client = $this->client();
+        $projects = Project::query()->where('client_id', $client->id)->where('share_hours', true)->orderBy('name')->get(['id', 'name', 'slug']);
+        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month')) ? $request->query('month') : null;
+        $projectId = $projects->pluck('id')->contains($request->query('project')) ? $request->query('project') : null;
+
+        $base = \App\Models\TimeEntry::query()->whereIn('project_id', $projects->pluck('id'))->where('is_billable', true)
+            ->when($projectId, fn ($q) => $q->where('project_id', $projectId));
+        $all = (clone $base)->orderByDesc('entry_date')->get(['id', 'project_id', 'user_id', 'entry_date', 'minutes', 'description']);
+        $months = $all->groupBy(fn ($e) => $e->entry_date->format('Y-m'))->map(fn ($g) => (int) $g->sum('minutes'))->sortKeysDesc();
+        $entries = $month ? $all->filter(fn ($e) => $e->entry_date->format('Y-m') === $month)->values() : $all->take(200)->values();
+        $names = \App\Models\User::query()->whereIn('id', $entries->pluck('user_id')->unique())->pluck('name', 'id');
+
+        return view('portal.hours', [
+            'projects' => $projects->keyBy('id'), 'entries' => $entries, 'names' => $names, 'months' => $months, 'month' => $month, 'projectId' => $projectId,
+            'perProject' => $all->groupBy('project_id')->map(fn ($g) => (int) $g->sum('minutes')), 'total' => (int) $all->sum('minutes'),
+        ]);
+    }
+
     public function project(Request $request, Project $project): View
     {
         $client = $this->client();
@@ -196,7 +217,7 @@ class PortalController extends Controller
 
         $link = route('invite.show', $invitation->token);
         try {
-            \Illuminate\Support\Facades\Mail::raw("{$request->user()->name} invited you to the {$client->name} portal on Freelancy.\n\nOpen this link to join:\n{$link}\n", fn ($m) => $m->to($email)->subject("{$request->user()->name} invited you to Freelancy"));
+            \App\Support\BrandedMail::send($email, "{$request->user()->name} invited you to Freelancy", "Join the {$client->name} portal", "{$request->user()->name} invited you to the {$client->name} portal.", 'Join the portal', $link);
         } catch (\Throwable) {
             // The link is shown on screen either way.
         }

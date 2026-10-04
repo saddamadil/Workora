@@ -116,6 +116,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
         Route::get('/payments', [PortalController::class, 'payments'])->name('payments');
+        Route::get('/hours', [PortalController::class, 'hours'])->name('hours');
         Route::get('/invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
         Route::post('/invoices/{invoice}/paid', [PaymentReportController::class, 'store'])->name('invoices.paid');
         Route::get('/team', [PortalController::class, 'team'])->name('team');

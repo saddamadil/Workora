@@ -165,8 +165,7 @@ class TeamController extends Controller
         $company = $tenancy->organization()->name;
 
         try {
-            Mail::raw("{$request->user()->name} invited you to join {$company} on Freelancy.\n\nOpen this link to accept:\n{$link}\n", fn ($m) => $m
-                ->to($invitation->email)->subject("You're invited to {$company} on Freelancy"));
+            \App\Support\BrandedMail::send($invitation->email, "You're invited to {$company} on Freelancy", "Join {$company}", "{$request->user()->name} invited you to join {$company} on Freelancy.", 'Accept the invitation', $link);
         } catch (\Throwable) {
             // Mail may not be configured yet; the link is shown below either way.
         }

@@ -159,8 +159,7 @@ class ClientController extends Controller
         $link = route('invite.show', $invitation->token);
         $who = $request->user()->name;
         try {
-            Mail::raw("{$who} invited you to your client portal on Freelancy.\n\nSee projects, share files and view invoices:\n{$link}\n", fn ($m) => $m
-                ->to($email)->subject("{$who} invited you to Freelancy"));
+            \App\Support\BrandedMail::send($email, "{$who} invited you to Freelancy", 'Your client portal is ready', "{$who} invited you to your client portal.\n\nSee projects, share files, message them and view invoices in one place.", 'Open my portal', $link);
         } catch (\Throwable) {
             // Mail may not be set up yet; the link is shown below either way.
         }

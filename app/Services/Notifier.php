@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\AppNotification;
 use App\Models\User;
 use App\Support\Tenancy;
-use Illuminate\Support\Facades\Mail;
+use App\Support\BrandedMail;
 
 /**
  * Tells people about things. Every notification is kept in-app; an email goes out only when the
@@ -47,13 +47,10 @@ class Notifier
 
             if (($prefs[$type]['email'] ?? (self::TYPES[$type][2] ?? false)) === true) {
                 try {
-                    Mail::raw($title.($body ? "\n\n".$body : '').($url ? "\n\n".url($url) : '')."\n\nYou can change which emails you get in Settings > Notifications.", function ($m) use ($user, $title, $replyTo) {
-                        $reply = $replyTo ? $replyTo($user) : null;
-                        $m->to($user->email)->subject($title);
-                        if ($reply) {
-                            $m->replyTo($reply);
-                        }
-                    });
+                    $reply = $replyTo ? $replyTo($user) : null;
+                    BrandedMail::send($user->email, $title, $title, (string) $body, $url ? 'Open in Freelancy' : null, $url, [],
+                        'You can change which emails you get in Settings > Notifications.'.($reply ? ' You can also reply to this email.' : ''),
+                        fn ($m) => $reply ? $m->replyTo($reply) : null);
                 } catch (\Throwable) {
                     // Mail may not be set up yet. The in-app notification is already saved.
                 }

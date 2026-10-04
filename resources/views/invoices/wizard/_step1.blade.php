@@ -7,7 +7,7 @@
     }
 @endphp
 <form method="POST" action="{{ $invoice->exists ? route('invoices.update', $invoice) : route('invoices.store') }}" class="space-y-6"
-      x-data="{ type: '{{ $v('invoice_type', 'domestic') }}', billTo: '{{ $v('bill_to_type', 'company') }}', terms: '{{ $termsNow }}', treatment: '{{ $v('tax_treatment', 'none') }}', cur: '{{ $v('currency') }}', rates: @js($rates ?? []), profiles: @js($taxProfiles ?? []),
+      x-data="{ type: '{{ $v('invoice_type', 'domestic') }}', billTo: '{{ $v('bill_to_type', 'company') }}', terms: '{{ $termsNow }}', treatment: '{{ $v('tax_treatment', 'none') }}', cur: '{{ $v('currency') }}', clientId: '{{ $v('client_id') }}', rates: @js($rates ?? []), profiles: @js($taxProfiles ?? []),
           apply(id) { const p = this.profiles.find(x => x.id === id); if (!p) return; this.treatment = p.treatment; if (p.applies_to !== 'all') this.type = p.applies_to; this.$nextTick(() => { const set = (k, v) => { const e = document.getElementById(k); if (e) e.value = v ?? ''; }; set('tax_rate', p.rate || ''); set('tax_label', p.label); set('place_of_supply', p.place_of_supply); set('sac_code', p.sac_code); set('lut_reference', p.lut_reference); }); } }">
     @csrf @if ($invoice->exists) @method('PUT') @endif
 
@@ -33,18 +33,21 @@
             </div>
             <div x-show="billTo === 'client'" x-cloak>
                 <label class="label" for="client_id">Client</label>
-                <select id="client_id" name="client_id" class="input" :disabled="billTo !== 'client'">
+                <select id="client_id" name="client_id" class="input" x-model="clientId" :disabled="billTo !== 'client'">
                     <option value="">Choose a client</option>
                     @foreach ($clients as $c)<option value="{{ $c->id }}" @selected($v('client_id') === $c->id)>{{ $c->name }}</option>@endforeach
                 </select>
                 @if ($clients->isEmpty())<p class="mt-1 text-xs text-slate-500">No clients yet. <a class="text-brand-600 underline" href="{{ route('clients.create') }}">Add one</a>.</p>@endif
             </div>
-            <div x-show="billTo === 'client'" x-cloak x-data="{ pid: '{{ $v('project_id') }}' }">
+            <div x-show="billTo === 'client'" x-cloak x-data="{ pid: '{{ $v('project_id') }}', all: @js($projects->map(fn ($pr) => ['id' => $pr->id, 'name' => $pr->name, 'client_id' => $pr->client_id])->values()),
+                    get shown() { return this.all.filter(p => p.client_id === clientId); } }" x-effect="if (pid && !shown.some(p => p.id === pid)) pid = ''">
                 <label class="label" for="project_id">Project <span class="font-normal text-slate-400">(optional)</span></label>
-                <select id="project_id" name="project_id" class="input" x-model="pid" :disabled="billTo !== 'client'">
+                <select id="project_id" name="project_id" class="input" :disabled="billTo !== 'client'">
                     <option value="">Not tied to a project</option>
-                    @foreach ($projects as $pr)<option value="{{ $pr->id }}" data-client="{{ $pr->client_id }}">{{ $pr->name }}</option>@endforeach
+                    <template x-for="p in shown" :key="p.id"><option :value="p.id" x-text="p.name" :selected="p.id === pid"></option></template>
                 </select>
+                <p class="mt-1 text-xs text-slate-500" x-show="clientId && shown.length === 0">This client has no projects yet.</p>
+                <p class="mt-1 text-xs text-slate-500" x-show="!clientId">Choose a client to see their projects.</p>
             </div>
             <div>
                 <label class="label" for="contract_id">Contract <span class="font-normal text-slate-400">(optional)</span></label>
